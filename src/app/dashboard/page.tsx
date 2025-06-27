@@ -4,20 +4,9 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAccount, useBalance } from 'wagmi'
 import Layout from '@/components/Layout'
-import { formatMarsAmount, truncateAddress } from '@/lib/contracts'
+import { formatMarsAmount, truncateAddress, fetchTransactionHistory, BlockchainTransaction } from '@/lib/contracts'
 import { marsCreditNetwork } from '@/lib/web3'
 import { ConnectWallet } from '@/components/ConnectWallet'
-
-interface Transaction {
-  hash: string
-  type: 'redemption' | 'transfer' | 'bridge'
-  amount: string
-  from?: string
-  to?: string
-  timestamp: string
-  status: 'completed' | 'pending' | 'failed'
-  grantName?: string
-}
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
@@ -26,69 +15,51 @@ export default function DashboardPage() {
     chainId: marsCreditNetwork.id,
   })
   
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<BlockchainTransaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
+  // Fetch real transaction history
   useEffect(() => {
     if (isConnected && address) {
-      // Mock transaction history - in a real app, this would come from the blockchain
-      const mockTransactions: Transaction[] = [
-        {
-          hash: '0x742d35Cc6634C0532925a3b8d123456789AbCdEf123456789AbCdEf742d35Cc66',
-          type: 'redemption',
-          amount: '1',
-          to: address,
-          timestamp: '2024-01-22T15:30:00Z',
-          status: 'completed',
-          grantName: 'Genesis Mars Grant'
-        },
-        {
-          hash: '0x123456789AbCdEf742d35Cc6634C0532925a3b8d742d35Cc6634C0532925a3b8d',
-          type: 'transfer',
-          amount: '0.5',
-          from: address,
-          to: '0x987654321FeDcBa098765432109876543210987654',
-          timestamp: '2024-01-21T10:15:00Z',
-          status: 'completed'
-        },
-        {
-          hash: '0xAbCdEf742d35Cc6634C0532925a3b8d123456789742d35Cc6634C0532925a3b8d',
-          type: 'redemption',
-          amount: '0.5',
-          to: address,
-          timestamp: '2024-01-20T14:45:00Z',
-          status: 'completed',
-          grantName: 'Community Rewards Grant'
-        },
-        {
-          hash: '0x456789AbCdEf123456789AbCdEf742d35Cc6634C0532925a3b8d123456789AbCdE',
-          type: 'bridge',
-          amount: '2',
-          from: '0x1234567890123456789012345678901234567890',
-          to: address,
-          timestamp: '2024-01-19T09:30:00Z',
-          status: 'pending'
+      const loadTransactions = async () => {
+        try {
+          setLoading(true)
+          setError(null)
+          console.log('🔍 Loading transaction history from blockchain...')
+          
+          const realTransactions = await fetchTransactionHistory(address as `0x${string}`, 10)
+          console.log('✅ Loaded transactions:', realTransactions)
+          
+          setTransactions(realTransactions)
+        } catch (err) {
+          console.error('❌ Failed to load transactions:', err)
+          setError('Failed to load transaction history')
+          setTransactions([]) // Fallback to empty array
+        } finally {
+          setLoading(false)
         }
-      ]
+      }
 
-      // Simulate loading delay
-      setTimeout(() => {
-        setTransactions(mockTransactions)
-        setLoading(false)
-      }, 1000)
+      loadTransactions()
     } else {
       setLoading(false)
+      setTransactions([])
     }
   }, [isConnected, address])
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch {
+      return 'Unknown'
+    }
   }
 
   const getTransactionIcon = (type: string) => {
@@ -217,7 +188,7 @@ export default function DashboardPage() {
                 </Link>
                 
                 <button
-                  onClick={() => window.open(`https://explorer.marscredit.xyz/address/${address}`, '_blank')}
+                  onClick={() => window.open(`https://blockscan.marscredit.xyz/address/${address}`, '_blank')}
                   className="block w-full bg-red-900/30 border border-red-600/30 text-red-400 text-center py-3 px-4 font-medium rounded-lg hover:bg-red-900/50 transition-all"
                 >
                   View on Explorer
@@ -229,13 +200,40 @@ export default function DashboardPage() {
           {/* Transaction History */}
           <div className="mars-card rounded-xl p-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-red-300">Recent Activity</h2>
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="flex items-center space-x-3">
+                <h2 className="text-2xl font-bold text-red-300">Recent Activity</h2>
+                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
               </div>
+              
+              {/* View More on Explorer */}
+              {isConnected && address && (
+                <button
+                  onClick={() => window.open(`https://blockscan.marscredit.xyz/address/${address}`, '_blank')}
+                  className="flex items-center space-x-2 text-red-400 hover:text-red-300 text-sm transition-colors"
+                >
+                  <span>View More</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </button>
+              )}
             </div>
+
+            {error && (
+              <div className="bg-red-900/30 border border-red-600/30 rounded-lg p-4 mb-6">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <span className="text-red-300 font-medium">Failed to Load</span>
+                </div>
+                <p className="text-red-400/80 text-sm mt-1">{error}</p>
+              </div>
+            )}
 
             {loading ? (
               <div className="space-y-4">
@@ -249,6 +247,9 @@ export default function DashboardPage() {
                     <div className="w-20 h-4 bg-red-900/40 rounded"></div>
                   </div>
                 ))}
+                <div className="text-center py-4">
+                  <p className="text-red-400/80 text-sm">Loading transaction history from blockchain...</p>
+                </div>
               </div>
             ) : transactions.length > 0 ? (
               <div className="space-y-4">
@@ -267,11 +268,15 @@ export default function DashboardPage() {
                         {tx.grantName && (
                           <span className="text-red-400/80 text-sm">• {tx.grantName}</span>
                         )}
+                        <span className="text-red-400/60 text-xs">Block #{tx.blockNumber}</span>
                       </div>
                       <div className="text-red-400/80 text-sm">
                         {tx.type === 'redemption' ? `Redeemed from grant` :
-                         tx.type === 'transfer' ? `Transfer ${tx.from === address ? 'to' : 'from'} ${truncateAddress(tx.from === address ? tx.to! : tx.from!)}` :
+                         tx.type === 'transfer' ? `Transfer ${tx.from === address ? 'to' : 'from'} ${truncateAddress(tx.from === address ? (tx.to || '') : (tx.from || ''))}` :
                          `Bridge transfer`}
+                      </div>
+                      <div className="text-red-400/60 text-xs mt-1">
+                        TX: {truncateAddress(tx.hash, 8)}
                       </div>
                     </div>
                     
@@ -290,6 +295,19 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 ))}
+                
+                {/* View More Button */}
+                <div className="text-center pt-4 border-t border-red-600/30">
+                  <button
+                    onClick={() => window.open(`https://blockscan.marscredit.xyz/address/${address}`, '_blank')}
+                    className="inline-flex items-center space-x-2 text-red-400 hover:text-red-300 text-sm transition-colors"
+                  >
+                    <span>View All Transactions on Block Explorer</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="text-center py-12">
@@ -299,13 +317,22 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-red-300">No Transactions Yet</h3>
-                <p className="text-red-400/80 mb-4">Start by redeeming tokens from available grants.</p>
-                <Link
-                  href="/grants"
-                  className="inline-block mars-button px-6 py-3 text-white font-medium rounded-lg"
-                >
-                  Explore Grants
-                </Link>
+                <p className="text-red-400/80 mb-4">
+                  {isConnected 
+                    ? "No transaction history found for this wallet on Mars Credit Network. Start by redeeming tokens from available grants."
+                    : "Connect your wallet to view your transaction history."
+                  }
+                </p>
+                {isConnected ? (
+                  <Link
+                    href="/grants"
+                    className="inline-block mars-button px-6 py-3 text-white font-medium rounded-lg"
+                  >
+                    Explore Grants
+                  </Link>
+                ) : (
+                  <ConnectWallet />
+                )}
               </div>
             )}
           </div>

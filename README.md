@@ -52,7 +52,7 @@ Before running this application, make sure you have:
    
    # Mars Credit Network configuration
    NEXT_PUBLIC_RPC_URL=https://rpc.marscredit.xyz
-   NEXT_PUBLIC_EXPLORER_URL=https://explorer.marscredit.xyz
+   NEXT_PUBLIC_EXPLORER_URL=https://blockscan.marscredit.xyz
    
    # Smart contract deployment (for deployment only)
    PRIVATE_KEY=your_private_key_here
@@ -109,7 +109,7 @@ Before running this application, make sure you have:
 - **Network Name**: Mars Credit Network
 - **Currency**: MARS
 - **RPC URL**: https://rpc.marscredit.xyz
-- **Explorer**: https://explorer.marscredit.xyz
+- **Explorer**: https://blockscan.marscredit.xyz
 
 ### Adding to MetaMask
 

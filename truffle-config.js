@@ -82,8 +82,8 @@ module.exports = {
         });
       },
       network_id: 110110,
-      gas: 8000000,
-      gasPrice: 20000000000, // 20 gwei
+      gas: 3000000,
+      gasPrice: 100000000, // 0.1 gwei - very low for Mars Credit Network
       confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: true
@@ -118,13 +118,12 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.20",    // Updated to match OpenZeppelin v5.3.0 requirements
+      version: "0.8.17",    // Compatible with EVM 1.10.18
       settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
-          enabled: true,
-          runs: 200
+          enabled: false     // Disable optimizer for debugging
         },
-        evmVersion: "shanghai" // Use latest EVM version compatible with most networks
+        evmVersion: "istanbul" // Compatible with EVM 1.10.18
       }
     }
   },

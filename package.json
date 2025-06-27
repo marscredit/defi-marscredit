@@ -18,7 +18,8 @@
     "test": "truffle test",
     "test:frontend": "jest",
     "clean": "rm -rf .next out node_modules/.cache",
-    "clean:contracts": "rm -rf build/contracts"
+    "clean:contracts": "rm -rf build/contracts",
+    "add-grant": "node scripts/add-grant.js"
   },
   "keywords": [
     "defi",

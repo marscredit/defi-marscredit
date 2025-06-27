@@ -1,17 +1,17 @@
-const TokenGrant = artifacts.require("TokenGrant");
+const SimpleTokenGrant = artifacts.require("SimpleTokenGrant");
 
 module.exports = function (deployer, network, accounts) {
   // Set the redemption amount per user (in wei)
-  // 1 MARS = 10^18 wei (standard ERC20 decimals)
-  const redemptionAmountPerUser = web3.utils.toWei("1", "ether"); // 1 MARS per user
+  // 5000 MARS = 5000 * 10^18 wei (standard ERC20 decimals) - large grant for early adopters
+  const redemptionAmountPerUser = web3.utils.toWei("5000", "ether"); // 5000 MARS per user
   
-  console.log("Deploying TokenGrant contract...");
+  console.log("Deploying SimpleTokenGrant contract...");
   console.log("Network:", network);
   console.log("Deployer account:", accounts[0]);
-  console.log("Redemption amount per user:", redemptionAmountPerUser, "wei (1 MARS)");
+  console.log("Redemption amount per user:", redemptionAmountPerUser, "wei (5000 MARS)");
   
-  deployer.deploy(TokenGrant, redemptionAmountPerUser).then(function(instance) {
-    console.log("TokenGrant deployed at address:", instance.address);
+  deployer.deploy(SimpleTokenGrant, redemptionAmountPerUser).then(function(instance) {
+    console.log("SimpleTokenGrant deployed at address:", instance.address);
     console.log("Remember to fund the contract with MARS tokens using the fundGrant() function");
     
     // Save deployment info for frontend

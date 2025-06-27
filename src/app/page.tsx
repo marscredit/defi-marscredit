@@ -46,18 +46,12 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              {isConnected ? (
-                <Link 
-                  href="/grants"
-                  className="px-8 py-4 mars-button text-white font-semibold rounded-lg text-lg"
-                >
-                  Explore Grants
-                </Link>
-              ) : (
-                <div className="px-8 py-4">
-                  <ConnectWallet />
-                </div>
-              )}
+              <Link 
+                href="/grants"
+                className="px-8 py-4 mars-button text-white font-semibold rounded-lg text-lg"
+              >
+                View Grants
+              </Link>
               
               <Link 
                 href="/dashboard"

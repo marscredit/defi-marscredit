@@ -31,7 +31,7 @@ const Layout = ({ children }: LayoutProps) => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-red-600/30 bg-black/80 backdrop-blur-sm">
+      <footer className="relative z-10 bg-black/80 backdrop-blur-sm">
         <div className="mars-container py-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Logo and Description */}

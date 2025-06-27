@@ -16,6 +16,11 @@ states/
 .env.production.local
 .env.development.local
 
+# Deployment wallet (NEVER COMMIT)
+deployment-wallet.json
+*.wallet
+*-wallet.json
+
 # Dependencies
 node_modules/
 npm-debug.log*

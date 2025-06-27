@@ -8,10 +8,9 @@ const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/grants', label: 'Grants' },
-    { href: '/bridge', label: 'Bridge' },
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/grants', label: 'Grants' },
+    { href: '/bridge', label: 'Bridge (Soon)' },
   ]
 
   const toggleMenu = () => {
