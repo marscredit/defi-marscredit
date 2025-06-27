@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #dc2626;
+  --mars-red: #dc2626;
+  --mars-red-dark: #991b1b;
+  --mars-red-light: #f87171;
+  --mars-orange: #ea580c;
+  --mars-black: #000000;
+  --mars-gray: #111111;
+  --mars-gray-light: #1f1f1f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #000000;
+    --foreground: #dc2626;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* Mars Theme Custom Styles */
+.mars-gradient {
+  background: linear-gradient(135deg, #000000 0%, #1a0000 50%, #000000 100%);
+}
+
+.mars-red-glow {
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+}
+
+.mars-card {
+  background: rgba(31, 31, 31, 0.8);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.mars-button {
+  background: linear-gradient(135deg, var(--mars-red) 0%, var(--mars-red-dark) 100%);
+  transition: all 0.3s ease;
+}
+
+.mars-button:hover {
+  background: linear-gradient(135deg, var(--mars-red-light) 0%, var(--mars-red) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
+}
+
+.mars-button:disabled {
+  background: #4a4a4a;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Mars Planet Animation */
+@keyframes rotate-planet {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mars-planet {
+  animation: rotate-planet 20s linear infinite;
+}
+
+/* Floating Stars Animation */
+@keyframes float-stars {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.floating-stars {
+  animation: float-stars 3s ease-in-out infinite;
+}
+
+/* Glowing Text Effect */
+.mars-glow-text {
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.6);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--mars-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mars-red);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mars-red-light);
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mars-spinner {
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-top: 2px solid var(--mars-red);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse Animation for notifications */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.mars-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive Design Helpers */
+.mars-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  .mars-container {
+    padding: 0 0.5rem;
+  }
+  
+  .mars-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--mars-red);
+  outline-offset: 2px;
+}
