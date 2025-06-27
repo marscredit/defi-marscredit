@@ -75,6 +75,7 @@ export default function GaslessRedemption({
 
       // Don't re-check if transaction was successful
       if (manualTxState.isSuccess) {
+        setLoading(false)
         return
       }
 
@@ -203,10 +204,12 @@ export default function GaslessRedemption({
       console.log('✅ Transaction sent with hash:', hash)
       setManualTxState({ isPending: false, isSuccess: true, hash })
       
-      // Call success callback if provided
-      if (onSuccess) {
-        onSuccess()
-      }
+      // Add a delay before calling success callback to show the success state
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess()
+        }
+      }, 3000) // Show success state for 3 seconds before potentially reloading
       
     } catch (error) {
       console.error('❌ Error initiating gasless transaction:', error)
