@@ -76,7 +76,7 @@ export default function GrantDetailPage({ params }: { params: Promise<{ address:
     }
     
     initializeData()
-  }, [params])
+  }, []) // Remove params from dependency array since it's a Promise
 
   // Separate effect for user address changes
   useEffect(() => {
