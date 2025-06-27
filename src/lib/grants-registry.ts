@@ -9,27 +9,27 @@ export const publicClient = createPublicClient({
   transport: http()
 })
 
-// SimpleTokenGrant contract ABI
-export const SIMPLE_TOKEN_GRANT_ABI = parseAbi([
+// CORRECT ABIs based on deployed contracts
+export const SIMPLE_TOKEN_GRANT_ABI = [
   'function owner() view returns (address)',
-  'function totalTokensAvailable() view returns (uint256)',
-  'function redemptionAmountPerUser() view returns (uint256)', 
-  'function tokensRedeemed() view returns (uint256)',
+  'function getBalance() view returns (uint256)',
+  'function redemptionAmountPerUser() view returns (uint256)',
   'function hasAddressRedeemed(address) view returns (bool)',
   'function getRemainingTokens() view returns (uint256)',
-  'function getRemainingRedemptions() view returns (uint256)',
-  'function getBalance() view returns (uint256)',
-  'function paused() view returns (bool)'
-])
+  'function redeemTokens() external'
+] as const
 
-// MarsGrantPaymaster contract ABI
-export const MARS_GRANT_PAYMASTER_ABI = parseAbi([
-  'function sponsoredRedemption(address grantContract) external',
-  'function canUseSponsoredTransaction(address user) view returns (bool)',
-  'function getBlocksUntilNextSponsorship(address user) view returns (uint256)',
-  'function getStats() view returns (uint256 balance, uint256 totalSponsored, uint256 rateLimit)',
-  'function authorizedContracts(address) view returns (bool)'
-])
+export const MARS_GRANT_PAYMASTER_ABI = [
+  'function owner() view returns (address)',
+  'function getBalance() view returns (uint256)',
+  'function totalGasSponsored() view returns (uint256)',
+  'function rateLimitBlocks() view returns (uint256)',
+  'function authorizedContracts(address) view returns (bool)',
+  'function lastSponsoredBlock(address) view returns (uint256)',
+  'function canUseSponsoredTransaction(address) view returns (bool)',
+  'function getBlocksUntilNextSponsorship(address) view returns (uint256)',
+  'function sponsoredRedemption(address) external'
+] as const
 
 // PaymasterEnabledGrant contract ABI (enhanced version with gasless support)
 export const PAYMASTER_ENABLED_GRANT_ABI = parseAbi([
@@ -114,105 +114,48 @@ export interface LiveGrantData {
   status: 'Active' | 'Completed' | 'Paused'
 }
 
-export async function loadGrantData(grantConfig: GrantConfig): Promise<LiveGrantData> {
+export async function loadGrantData(contractAddress: `0x${string}`) {
   try {
-    // Read contract data from blockchain
-    const [
-      totalTokensAvailable,
-      redemptionAmountPerUser,
-      tokensRedeemed,
-      remainingTokens,
-      remainingRedemptions,
-      isPaused
-    ] = await Promise.all([
+    console.log(`📖 Loading grant data from contract: ${contractAddress}`)
+    
+    // Read contract data using correct function names
+    const [balance, redemptionAmount, remainingTokens] = await Promise.all([
       publicClient.readContract({
-        address: grantConfig.contractAddress,
+        address: contractAddress,
         abi: SIMPLE_TOKEN_GRANT_ABI,
-        functionName: 'totalTokensAvailable'
-      }),
+        functionName: 'getBalance'
+      }).catch(() => 0n),
       publicClient.readContract({
-        address: grantConfig.contractAddress,
+        address: contractAddress,
         abi: SIMPLE_TOKEN_GRANT_ABI,
         functionName: 'redemptionAmountPerUser'
-      }),
+      }).catch(() => 0n),
       publicClient.readContract({
-        address: grantConfig.contractAddress,
-        abi: SIMPLE_TOKEN_GRANT_ABI,
-        functionName: 'tokensRedeemed'
-      }),
-      publicClient.readContract({
-        address: grantConfig.contractAddress,
+        address: contractAddress,
         abi: SIMPLE_TOKEN_GRANT_ABI,
         functionName: 'getRemainingTokens'
-      }),
-      publicClient.readContract({
-        address: grantConfig.contractAddress,
-        abi: SIMPLE_TOKEN_GRANT_ABI,
-        functionName: 'getRemainingRedemptions'
-      }),
-      publicClient.readContract({
-        address: grantConfig.contractAddress,
-        abi: SIMPLE_TOKEN_GRANT_ABI,
-        functionName: 'paused'
-      })
+      }).catch(() => 0n)
     ])
-
-    // Convert BigInt values to strings for display
-    const totalPool = formatEther(totalTokensAvailable as bigint)
-    const perAddress = formatEther(redemptionAmountPerUser as bigint)
-    const remaining = formatEther(remainingTokens as bigint)
-    const claimsLeft = Number(remainingRedemptions)
     
-    // Calculate progress percentage
-    const totalTokens = Number(totalPool)
-    const remainingTokensNum = Number(remaining)
-    const progress = totalTokens > 0 ? Math.round(((totalTokens - remainingTokensNum) / totalTokens) * 100) : 0
-    
-    // Determine status
-    let status: 'Active' | 'Completed' | 'Paused' = 'Active'
-    if (isPaused) status = 'Paused'
-    else if (remainingTokensNum <= 0) status = 'Completed'
+    console.log(`💰 Contract balance: ${formatEther(balance)} MARS`)
+    console.log(`🎁 Redemption amount: ${formatEther(redemptionAmount)} MARS`)
+    console.log(`📊 Remaining tokens: ${formatEther(remainingTokens)} MARS`)
     
     return {
-      id: grantConfig.id,
-      name: grantConfig.name,
-      description: grantConfig.description,
-      contractAddress: grantConfig.contractAddress,
-      category: grantConfig.category,
-      isActive: grantConfig.isActive,
-      deployedAt: grantConfig.deployedAt,
-      
-      totalPool: `${totalPool} MARS`,
-      perAddress: `${perAddress} MARS`,
-      remaining: `${remaining} MARS`,
-      claimsLeft,
-      progress,
-      isPaused: isPaused as boolean,
-      
-      status
+      balance: formatEther(balance),
+      redemptionAmount: formatEther(redemptionAmount),
+      remainingTokens: formatEther(remainingTokens),
+      totalUsers: Math.floor(Number(formatEther(balance)) / Number(formatEther(redemptionAmount))),
+      isActive: remainingTokens > 0n
     }
-    
   } catch (error) {
-    console.error(`Failed to load grant data for ${grantConfig.id}:`, error)
-    
-    // Return fallback data if blockchain read fails
+    console.error(`❌ Error loading grant data for ${contractAddress}:`, error)
     return {
-      id: grantConfig.id,
-      name: grantConfig.name,
-      description: grantConfig.description,
-      contractAddress: grantConfig.contractAddress,
-      category: grantConfig.category,
-      isActive: grantConfig.isActive,
-      deployedAt: grantConfig.deployedAt,
-      
-      totalPool: 'Loading...',
-      perAddress: 'Loading...',
-      remaining: 'Loading...',
-      claimsLeft: 0,
-      progress: 0,
-      isPaused: false,
-      
-      status: 'Active'
+      balance: '0',
+      redemptionAmount: '0', 
+      remainingTokens: '0',
+      totalUsers: 0,
+      isActive: false
     }
   }
 }
@@ -222,26 +165,27 @@ export async function loadAllGrants(): Promise<LiveGrantData[]> {
   
   // Load all grant data in parallel
   const grantsData = await Promise.all(
-    activeGrants.map(grant => loadGrantData(grant))
+    activeGrants.map(grant => loadGrantData(grant.contractAddress))
   )
   
   return grantsData
 }
 
 // Check if user has redeemed from a specific grant
-export async function hasUserRedeemed(contractAddress: `0x${string}`, userAddress: `0x${string}`): Promise<boolean> {
+export async function hasUserRedeemed(grantAddress: `0x${string}`, userAddress: `0x${string}`): Promise<boolean> {
   try {
     const hasRedeemed = await publicClient.readContract({
-      address: contractAddress,
+      address: grantAddress,
       abi: SIMPLE_TOKEN_GRANT_ABI,
       functionName: 'hasAddressRedeemed',
       args: [userAddress]
     })
     
+    console.log(`🔍 User ${userAddress} redemption status for ${grantAddress}: ${hasRedeemed}`)
     return hasRedeemed as boolean
   } catch (error) {
-    console.error('Failed to check redemption status:', error)
-    return false
+    console.error('Error checking redemption status:', error)
+    return false // Assume not redeemed on error to allow attempt
   }
 }
 
@@ -261,8 +205,25 @@ export async function loadGrantByAddress(contractAddress: string): Promise<LiveG
   }
 
   try {
-    const liveData = await loadGrantData(grantConfig)
-    return liveData
+    const liveData = await loadGrantData(grantConfig.contractAddress)
+    return {
+      id: grantConfig.id,
+      name: grantConfig.name,
+      description: grantConfig.description,
+      contractAddress: grantConfig.contractAddress,
+      category: grantConfig.category,
+      isActive: grantConfig.isActive,
+      deployedAt: grantConfig.deployedAt,
+      
+      totalPool: `${liveData.balance} MARS`,
+      perAddress: `${liveData.redemptionAmount} MARS`,
+      remaining: `${liveData.remainingTokens} MARS`,
+      claimsLeft: liveData.totalUsers,
+      progress: Math.round((Number(liveData.remainingTokens) / Number(liveData.balance)) * 100),
+      isPaused: false,
+      
+      status: liveData.isActive ? 'Active' : 'Completed'
+    }
   } catch (error) {
     console.error('Error loading grant by address:', error)
     return null
@@ -332,86 +293,77 @@ export async function isGrantAuthorizedForGasless(grantAddress: `0x${string}`): 
   }
 }
 
-// Debug function to check paymaster status
-export async function debugPaymasterStatus(): Promise<{
-  isDeployed: boolean
-  balance: string
-  totalSponsored: string
-  rateLimit: string
-  error?: string
-}> {
-  if (PAYMASTER_CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
-    return {
-      isDeployed: false,
-      balance: '0',
-      totalSponsored: '0',
-      rateLimit: '0',
-      error: 'Paymaster not deployed'
-    }
-  }
-
+// Debug functions for paymaster
+export async function debugPaymasterStatus() {
   try {
-    // Get paymaster stats
-    const [balance, totalSponsored, rateLimit] = await publicClient.readContract({
+    const balance = await publicClient.readContract({
       address: PAYMASTER_CONTRACT_ADDRESS,
       abi: MARS_GRANT_PAYMASTER_ABI,
-      functionName: 'getStats'
-    }) as [bigint, bigint, bigint]
+      functionName: 'getBalance'
+    })
+    
+    const totalSponsored = await publicClient.readContract({
+      address: PAYMASTER_CONTRACT_ADDRESS,
+      abi: MARS_GRANT_PAYMASTER_ABI,
+      functionName: 'totalGasSponsored'
+    })
+    
+    const rateLimit = await publicClient.readContract({
+      address: PAYMASTER_CONTRACT_ADDRESS,
+      abi: MARS_GRANT_PAYMASTER_ABI,
+      functionName: 'rateLimitBlocks'
+    })
 
     return {
       isDeployed: true,
       balance: formatEther(balance),
       totalSponsored: formatEther(totalSponsored),
-      rateLimit: rateLimit.toString(),
+      rateLimit: rateLimit.toString()
     }
   } catch (error) {
-    return {
-      isDeployed: false,
-      balance: '0',
-      totalSponsored: '0',
-      rateLimit: '0',
-      error: error.message
-    }
+    console.error('Error debugging paymaster:', error)
+    return { error: 'Failed to read paymaster data' }
   }
 }
 
-// Debug function to check specific grant authorization
-export async function debugGrantAuthorization(grantAddress: `0x${string}`): Promise<{
-  isAuthorized: boolean
-  error?: string
-}> {
+export async function debugGrantAuthorization(grantAddress: `0x${string}`) {
   try {
-    const isAuthorized = await isGrantAuthorizedForGasless(grantAddress)
+    const isAuthorized = await publicClient.readContract({
+      address: PAYMASTER_CONTRACT_ADDRESS,
+      abi: MARS_GRANT_PAYMASTER_ABI,
+      functionName: 'authorizedContracts',
+      args: [grantAddress]
+    })
+
     return { isAuthorized }
   } catch (error) {
-    return {
-      isAuthorized: false,
-      error: error.message
-    }
+    console.error('Error checking grant authorization:', error)
+    return { error: 'Failed to check authorization' }
   }
 }
 
-// Check user's gasless transaction eligibility with detailed info
-export async function debugUserGaslessEligibility(userAddress: `0x${string}`): Promise<{
-  canUse: boolean
-  blocksUntilNext: number
-  error?: string
-}> {
+export async function debugUserGaslessEligibility(userAddress: `0x${string}`) {
   try {
-    const [canUse, blocksUntilNext] = await Promise.all([
-      canUseGaslessTransaction(userAddress),
-      getBlocksUntilGasless(userAddress)
-    ])
+    const canUse = await publicClient.readContract({
+      address: PAYMASTER_CONTRACT_ADDRESS,
+      abi: MARS_GRANT_PAYMASTER_ABI,
+      functionName: 'canUseSponsoredTransaction',
+      args: [userAddress]
+    })
+    
+    const blocksUntilNext = await publicClient.readContract({
+      address: PAYMASTER_CONTRACT_ADDRESS,
+      abi: MARS_GRANT_PAYMASTER_ABI,
+      functionName: 'getBlocksUntilNextSponsorship',
+      args: [userAddress]
+    })
 
     return {
       canUse,
-      blocksUntilNext
+      blocksUntilNext: Number(blocksUntilNext)
     }
   } catch (error) {
-    return {
-      canUse: false,
-      blocksUntilNext: 0,
-      error: error.message
-    }
+    console.error('Error checking user gasless eligibility:', error)
+    return { error: 'Failed to check user eligibility' }
   }
 } 
