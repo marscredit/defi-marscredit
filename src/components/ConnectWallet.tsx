@@ -1,28 +1,34 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
 import { marsCreditNetwork } from '@/lib/web3'
 
 export function ConnectWallet() {
+  const [mounted, setMounted] = useState(false)
   const { address, isConnected, chainId } = useAccount()
   const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
   const { switchChain } = useSwitchChain()
+
+  // Prevent hydration mismatch by only rendering after client mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Check if user is on the correct network
   const isCorrectNetwork = chainId === marsCreditNetwork.id
 
   // Auto-switch to Mars Credit Network when wallet connects
   useEffect(() => {
-    if (isConnected && !isCorrectNetwork) {
+    if (mounted && isConnected && !isCorrectNetwork) {
       console.log(`🔗 Auto-switching from chain ${chainId} to Mars Credit Network (${marsCreditNetwork.id})`)
       switchChain({ chainId: marsCreditNetwork.id })
         .catch((error) => {
           console.warn('Failed to auto-switch chain:', error.message)
         })
     }
-  }, [isConnected, isCorrectNetwork, chainId, switchChain])
+  }, [mounted, isConnected, isCorrectNetwork, chainId, switchChain])
 
   const handleConnect = async (connector: any) => {
     try {
@@ -38,6 +44,15 @@ export function ConnectWallet() {
     } catch (error) {
       console.error('Failed to switch network:', error)
     }
+  }
+
+  // Show loading state during SSR and initial hydration
+  if (!mounted) {
+    return (
+      <div className="mars-button px-4 py-2 text-white font-medium rounded-lg text-sm bg-gray-600 cursor-not-allowed">
+        Loading...
+      </div>
+    )
   }
 
   if (isConnected) {
