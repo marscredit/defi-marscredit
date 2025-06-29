@@ -6,7 +6,7 @@ import { useAccount, useWalletClient, usePublicClient } from 'wagmi'
 import { parseAbi } from 'viem'
 import Layout from '@/components/Layout'
 import { formatMarsAmount, truncateAddress } from '@/lib/contracts'
-import { ConnectWallet } from '@/components/ConnectWallet'
+
 import GaslessRedemption from '@/components/GaslessRedemption'
 import { loadGrantByAddress, hasUserRedeemed, LiveGrantData } from '@/lib/grants-registry'
 

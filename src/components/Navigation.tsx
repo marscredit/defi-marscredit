@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { ConnectWallet } from '@/components/ConnectWallet'
+import { WalletDropdown } from '@/components/WalletDropdown'
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -47,7 +47,7 @@ const Navigation = () => {
 
           {/* Wallet Connection */}
           <div className="hidden md:flex items-center">
-            <ConnectWallet />
+            <WalletDropdown />
           </div>
 
           {/* Mobile Menu Button */}
@@ -98,7 +98,7 @@ const Navigation = () => {
               
               {/* Mobile Wallet Connection */}
               <div className="pt-4 border-t border-red-600/30 flex justify-center">
-                <ConnectWallet />
+                <WalletDropdown />
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { useAccount } from 'wagmi'
 import Layout from '@/components/Layout'
-import { ConnectWallet } from '@/components/ConnectWallet'
+
 
 export default function Home() {
   const { isConnected } = useAccount()

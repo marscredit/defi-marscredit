@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useAccount } from 'wagmi'
 import Layout from '@/components/Layout'
 import { formatMarsAmount } from '@/lib/contracts'
-import { ConnectWallet } from '@/components/ConnectWallet'
+
 import { loadAllGrants, LiveGrantData } from '@/lib/grants-registry'
 
 export default function GrantsPage() {
@@ -145,9 +145,8 @@ export default function GrantsPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2 text-red-300">Connect Your Wallet</h3>
               <p className="text-red-400/80 mb-4">
-                You need to connect your wallet to view and redeem grants
+                Connect your wallet using the button in the top-right corner to view and redeem grants
               </p>
-                                  <ConnectWallet />
             </div>
           )}
 

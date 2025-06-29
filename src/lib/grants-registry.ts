@@ -163,12 +163,37 @@ export async function loadGrantData(contractAddress: `0x${string}`) {
 export async function loadAllGrants(): Promise<LiveGrantData[]> {
   const activeGrants = GRANTS_REGISTRY.filter(grant => grant.isActive)
   
-  // Load all grant data in parallel
-  const grantsData = await Promise.all(
-    activeGrants.map(grant => loadGrantData(grant.contractAddress))
+  // Load all grant data in parallel and map to proper structure
+  const grantsWithData = await Promise.all(
+    activeGrants.map(async (grant) => {
+      const liveData = await loadGrantData(grant.contractAddress)
+      
+      return {
+        id: grant.id,
+        name: grant.name,
+        description: grant.description,
+        contractAddress: grant.contractAddress,
+        category: grant.category,
+        isActive: grant.isActive,
+        deployedAt: grant.deployedAt,
+        
+        // Live blockchain data properly formatted
+        totalPool: `${liveData.balance} MARS`,
+        perAddress: `${liveData.redemptionAmount} MARS`,
+        remaining: `${liveData.remainingTokens} MARS`,
+        claimsLeft: liveData.totalUsers,
+        progress: liveData.balance !== '0' 
+          ? Math.round(((Number(liveData.balance) - Number(liveData.remainingTokens)) / Number(liveData.balance)) * 100)
+          : 0,
+        isPaused: false,
+        
+        // Status based on activity
+        status: liveData.isActive ? 'Active' : 'Completed'
+      } as LiveGrantData
+    })
   )
   
-  return grantsData
+  return grantsWithData
 }
 
 // Check if user has redeemed from a specific grant

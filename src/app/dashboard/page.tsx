@@ -6,7 +6,7 @@ import { useAccount, useBalance } from 'wagmi'
 import Layout from '@/components/Layout'
 import { formatMarsAmount, truncateAddress, fetchTransactionHistory, BlockchainTransaction } from '@/lib/contracts'
 import { marsCreditNetwork } from '@/lib/web3'
-import { ConnectWallet } from '@/components/ConnectWallet'
+
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
@@ -104,9 +104,8 @@ export default function DashboardPage() {
               </div>
               <h1 className="text-3xl font-bold mb-4 text-red-300">Connect Your Wallet</h1>
               <p className="text-red-400/80 mb-8 max-w-md mx-auto">
-                You need to connect your wallet to view your dashboard and account information.
+                Connect your wallet using the button in the top-right corner to view your dashboard and account information.
               </p>
-                              <ConnectWallet />
             </div>
           </div>
         </div>
@@ -331,7 +330,9 @@ export default function DashboardPage() {
                     Explore Grants
                   </Link>
                 ) : (
-                  <ConnectWallet />
+                  <div className="text-red-400/60 text-sm">
+                    Connect your wallet to view transactions
+                  </div>
                 )}
               </div>
             )}
