@@ -50,6 +50,39 @@ export const PAYMASTER_ENABLED_GRANT_ABI = parseAbi([
 // Paymaster contract address - DEPLOYED!
 export const PAYMASTER_CONTRACT_ADDRESS: `0x${string}` = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4'
 
+// ENHANCED GASLESS GRANT ABI (with whitelist and gasless functionality)
+export const gaslessGrantABI = parseAbi([
+  'function owner() view returns (address)',
+  'function totalTokensAvailable() view returns (uint256)',
+  'function redemptionAmountPerUser() view returns (uint256)',
+  'function tokensRedeemed() view returns (uint256)',
+  'function paused() view returns (bool)',
+  'function isWhitelistMode() view returns (bool)',
+  'function hasRedeemed(address) view returns (bool)',
+  'function whitelist(address) view returns (bool)',
+  'function authorizedPaymasters(address) view returns (bool)',
+  'function getBalance() view returns (uint256)',
+  'function getRemainingTokens() view returns (uint256)',
+  'function getRemainingRedemptions() view returns (uint256)',
+  'function hasAddressRedeemed(address) view returns (bool)',
+  'function isWhitelisted(address) view returns (bool)',
+  'function canUserRedeem(address) view returns (bool)',
+  'function getGrantInfo() view returns (uint256, uint256, uint256, uint256, bool, bool)',
+  'function redeemTokens() external',
+  'function redeemForUser(address user) external',
+  'function authorizePaymaster(address) external',
+  'function revokePaymaster(address) external',
+  'function addToWhitelist(address) external',
+  'function addMultipleToWhitelist(address[]) external',
+  'function removeFromWhitelist(address) external',
+  'function setWhitelistMode(bool) external',
+  'function updateGrant(uint256) external',
+  'function fundGrant() external payable',
+  'function emergencyWithdraw() external',
+  'function pause() external',
+  'function unpause() external'
+])
+
 // ENHANCED TOKEN GRANT ABI (with whitelist functionality)
 export const ENHANCED_TOKEN_GRANT_ABI = parseAbi([
   'function owner() view returns (address)',
@@ -95,37 +128,59 @@ export interface GrantConfig {
 
 export const GRANTS_REGISTRY: GrantConfig[] = [
   {
-    id: 'test-genesis-grant-live',
-    name: '🧪 Test Genesis Grant - Live Contract',
-    description: 'Test genesis grant using existing deployed contract. Perfect for testing and development.',
-    contractAddress: '0x3D8a86688bBfD56903F6ace6f6B0B84b006C2174',
-    deployedAt: '2025-06-27T03:27:30.862Z',
+    id: 'enhanced-grant-1-test-genesis',
+    name: '🧪 Enhanced Test Genesis Grant',
+    description: 'Test Genesis Grant - 10 MARS per user. Perfect for testing and development with enhanced features.',
+    contractAddress: '0xFde59B4b965b6B0A9817F050261244Fe5f99B911',
+    deployedAt: '2025-07-01T21:18:34.320Z',
     category: 'genesis',
-    isActive: true,
-    contractType: 'simple',
-    isWhitelistOnly: false
-  },
-  {
-    id: 'gasless-grant-001',
-    name: '⚡ Gasless MARS Grant - 5000 Per User',
-    description: 'Revolutionary gasless grant! Redeem 5000 MARS tokens with ZERO gas fees. No MARS needed to start!',
-    contractAddress: '0x262622B66cB6fB6b1AAb0F22Dcf57b84c66f27B6',
-    deployedAt: '2025-06-27T14:07:13.000Z',
-    category: 'special',
-    isActive: true,
-    contractType: 'simple',
-    isWhitelistOnly: false
-  },
-  {
-    id: 'enhanced-gasless-grant-v2',
-    name: '⚡🔒 Enhanced Gasless Grant - New Version',
-    description: 'Next-generation grant with gasless redemptions, whitelist management, and community funding capabilities. Advanced features with ZERO gas fees!',
-    contractAddress: '0x262622B66cB6fB6b1AAb0F22Dcf57b84c66f27B6', // Using existing gasless for now
-    deployedAt: '2025-01-07T23:00:00.000Z',
-    category: 'special',
     isActive: true,
     contractType: 'enhanced-gasless',
     isWhitelistOnly: false
+  },
+  {
+    id: 'enhanced-grant-2-ecosystem',
+    name: '🌟 Ecosystem Participants Grant',
+    description: 'Ecosystem Participants - 5000 MARS per user (Whitelist Only). For verified ecosystem contributors.',
+    contractAddress: '0x38a94CD190Fd077d0E61f69878780766733f8a4d',
+    deployedAt: '2025-07-01T21:18:34.320Z',
+    category: 'special',
+    isActive: true,
+    contractType: 'enhanced-gasless',
+    isWhitelistOnly: true
+  },
+  {
+    id: 'enhanced-grant-3-developer',
+    name: '👩‍💻 Developer Incentives Grant',
+    description: 'Developer Incentives - 2500 MARS per user (Whitelist Only). Rewarding our amazing builders!',
+    contractAddress: '0x98505dA2060aEaB64003e51ea11eC856D468F293',
+    deployedAt: '2025-07-01T21:18:34.320Z',
+    category: 'developer',
+    isActive: true,
+    contractType: 'enhanced-gasless',
+    isWhitelistOnly: true
+  },
+  {
+    id: 'enhanced-grant-4-community',
+    name: '🎉 Community Airdrop Grant',
+    description: 'Community Airdrop - 1000 MARS per user (Public). Open to all community members!',
+    contractAddress: '0x672AE0779Fec18eb2eEe0fBd609c45f75CB3fBC9',
+    deployedAt: '2025-07-01T21:18:34.320Z',
+    category: 'community',
+    isActive: true,
+    contractType: 'enhanced-gasless',
+    isWhitelistOnly: false
+  },
+  {
+    id: 'enhanced-grant-5-strategic',
+    name: '🚀 Strategic Partners Grant',
+    description: 'Strategic Partners - 10000 MARS per user (Whitelist Only). Exclusive rewards for key partners.',
+    contractAddress: '0x66647478F2dEe1a26186851E1905f591C520494c',
+    deployedAt: '2025-07-01T21:18:34.320Z',
+    category: 'special',
+    isActive: true,
+    contractType: 'enhanced-gasless',
+    isWhitelistOnly: true
   }
 ]
 
@@ -158,31 +213,33 @@ export async function loadGrantData(contractAddress: `0x${string}`, contractType
     console.log(`📖 Loading grant data from contract: ${contractAddress} (type: ${contractType})`)
     
     if (contractType === 'enhanced' || contractType === 'enhanced-gasless') {
-      // Use enhanced contract ABI
+      // Use the correct ABI based on contract type
+      const abi = contractType === 'enhanced-gasless' ? gaslessGrantABI : ENHANCED_TOKEN_GRANT_ABI
+      
       const [balance, redemptionAmount, remainingTokens, isWhitelistMode, isPaused] = await Promise.all([
         publicClient.readContract({
           address: contractAddress,
-          abi: ENHANCED_TOKEN_GRANT_ABI,
+          abi: abi,
           functionName: 'getBalance'
         }).catch(() => 0n),
         publicClient.readContract({
           address: contractAddress,
-          abi: ENHANCED_TOKEN_GRANT_ABI,
+          abi: abi,
           functionName: 'redemptionAmountPerUser'
         }).catch(() => 0n),
         publicClient.readContract({
           address: contractAddress,
-          abi: ENHANCED_TOKEN_GRANT_ABI,
+          abi: abi,
           functionName: 'getRemainingTokens'
         }).catch(() => 0n),
         publicClient.readContract({
           address: contractAddress,
-          abi: ENHANCED_TOKEN_GRANT_ABI,
+          abi: abi,
           functionName: 'isWhitelistMode'
         }).catch(() => false),
         publicClient.readContract({
           address: contractAddress,
-          abi: ENHANCED_TOKEN_GRANT_ABI,
+          abi: abi,
           functionName: 'paused'
         }).catch(() => false)
       ])
@@ -291,7 +348,14 @@ export async function loadAllGrants(): Promise<LiveGrantData[]> {
 // Check if user has redeemed from a specific grant
 export async function hasUserRedeemed(grantAddress: `0x${string}`, userAddress: `0x${string}`, contractType: 'simple' | 'enhanced' | 'enhanced-gasless' = 'simple'): Promise<boolean> {
   try {
-    const abi = (contractType === 'enhanced' || contractType === 'enhanced-gasless') ? ENHANCED_TOKEN_GRANT_ABI : SIMPLE_TOKEN_GRANT_ABI
+    let abi
+    if (contractType === 'enhanced-gasless') {
+      abi = gaslessGrantABI
+    } else if (contractType === 'enhanced') {
+      abi = ENHANCED_TOKEN_GRANT_ABI
+    } else {
+      abi = SIMPLE_TOKEN_GRANT_ABI
+    }
     
     const hasRedeemed = await publicClient.readContract({
       address: grantAddress,
@@ -309,11 +373,13 @@ export async function hasUserRedeemed(grantAddress: `0x${string}`, userAddress: 
 }
 
 // Check if user is whitelisted (enhanced contracts only)
-export async function isUserWhitelisted(grantAddress: `0x${string}`, userAddress: `0x${string}`): Promise<boolean> {
+export async function isUserWhitelisted(grantAddress: `0x${string}`, userAddress: `0x${string}`, contractType: 'enhanced' | 'enhanced-gasless' = 'enhanced'): Promise<boolean> {
   try {
+    const abi = contractType === 'enhanced-gasless' ? gaslessGrantABI : ENHANCED_TOKEN_GRANT_ABI
+    
     const isWhitelisted = await publicClient.readContract({
       address: grantAddress,
-      abi: ENHANCED_TOKEN_GRANT_ABI,
+      abi: abi,
       functionName: 'isWhitelisted',
       args: [userAddress]
     })
@@ -327,11 +393,13 @@ export async function isUserWhitelisted(grantAddress: `0x${string}`, userAddress
 }
 
 // Check if user can redeem (enhanced contracts only)
-export async function canUserRedeem(grantAddress: `0x${string}`, userAddress: `0x${string}`): Promise<boolean> {
+export async function canUserRedeem(grantAddress: `0x${string}`, userAddress: `0x${string}`, contractType: 'enhanced' | 'enhanced-gasless' = 'enhanced'): Promise<boolean> {
   try {
+    const abi = contractType === 'enhanced-gasless' ? gaslessGrantABI : ENHANCED_TOKEN_GRANT_ABI
+    
     const canRedeem = await publicClient.readContract({
       address: grantAddress,
-      abi: ENHANCED_TOKEN_GRANT_ABI,
+      abi: abi,
       functionName: 'canUserRedeem',
       args: [userAddress]
     })

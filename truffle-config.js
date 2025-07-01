@@ -75,7 +75,7 @@ module.exports = {
         const HDWalletProvider = require('@truffle/hdwallet-provider');
         return new HDWalletProvider({
           privateKeys: [process.env.PRIVATE_KEY || '0x0000000000000000000000000000000000000000000000000000000000000000'],
-          providerOrUrl: process.env.RPC_URL || 'https://rpc.marscredit.xyz', // This will need to be provided
+          providerOrUrl: process.env.RPC_URL || 'https://rpc.marscredit.xyz:443', // Working endpoint with port
           chainId: 110110,
           networkCheckTimeout: 10000,
           timeoutBlocks: 200
@@ -118,7 +118,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.17",    // Compatible with EVM 1.10.18
+      version: "0.8.20",    // Updated for OpenZeppelin compatibility
       settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
           enabled: false     // Disable optimizer for debugging
