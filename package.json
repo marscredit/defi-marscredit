@@ -41,8 +41,8 @@
     "dotenv": "^16.5.0",
     "ethers": "^6.14.4",
     "next": "15.3.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "valtio": "^2.1.5",
     "viem": "^2.31.4",
     "wagmi": "^2.15.6"
@@ -53,16 +53,22 @@
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "jest": "^29.7.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
+  "overrides": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1"
+  },
   "engines": {
-    "node": ">=16.0.0",
+    "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "repository": {
