@@ -50,6 +50,36 @@ export const PAYMASTER_ENABLED_GRANT_ABI = parseAbi([
 // Paymaster contract address - DEPLOYED!
 export const PAYMASTER_CONTRACT_ADDRESS: `0x${string}` = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4'
 
+// ENHANCED TOKEN GRANT ABI (with whitelist functionality)
+export const ENHANCED_TOKEN_GRANT_ABI = parseAbi([
+  'function owner() view returns (address)',
+  'function totalTokensAvailable() view returns (uint256)',
+  'function redemptionAmountPerUser() view returns (uint256)',
+  'function tokensRedeemed() view returns (uint256)',
+  'function paused() view returns (bool)',
+  'function isWhitelistMode() view returns (bool)',
+  'function hasRedeemed(address) view returns (bool)',
+  'function whitelist(address) view returns (bool)',
+  'function getBalance() view returns (uint256)',
+  'function getRemainingTokens() view returns (uint256)',
+  'function getRemainingRedemptions() view returns (uint256)',
+  'function getTotalRedemptionAmount() view returns (uint256)',
+  'function hasAddressRedeemed(address) view returns (bool)',
+  'function isWhitelisted(address) view returns (bool)',
+  'function canUserRedeem(address) view returns (bool)',
+  'function getGrantInfo() view returns (uint256, uint256, uint256, uint256, bool, bool)',
+  'function redeemTokens() external',
+  'function addToWhitelist(address) external',
+  'function addMultipleToWhitelist(address[]) external',
+  'function removeFromWhitelist(address) external',
+  'function setWhitelistMode(bool) external',
+  'function updateGrant(uint256) external',
+  'function fundGrant() external payable',
+  'function emergencyWithdraw() external',
+  'function pause() external',
+  'function unpause() external'
+])
+
 // Grant Registry - Add new grants here
 export interface GrantConfig {
   id: string
@@ -59,26 +89,21 @@ export interface GrantConfig {
   deployedAt: string
   category: 'genesis' | 'community' | 'developer' | 'special'
   isActive: boolean
+  contractType?: 'simple' | 'enhanced' | 'enhanced-gasless' // Add contract type support
+  isWhitelistOnly?: boolean // Add whitelist indicator
 }
 
 export const GRANTS_REGISTRY: GrantConfig[] = [
   {
-    id: 'live-token-grant-001',
-    name: 'Live Mars Token Grant',
-    description: 'First deployed token grant on Mars Credit Network - claim your MARS tokens!',
+    id: 'test-genesis-grant-live',
+    name: '🧪 Test Genesis Grant - Live Contract',
+    description: 'Test genesis grant using existing deployed contract. Perfect for testing and development.',
     contractAddress: '0x3D8a86688bBfD56903F6ace6f6B0B84b006C2174',
     deployedAt: '2025-06-27T03:27:30.862Z',
     category: 'genesis',
-    isActive: false
-  },
-  {
-    id: 'grant-1750997516910',
-    name: 'Genesis MARS Grant - 5000 Per User',
-    description: 'Large genesis grant offering 5000 MARS tokens per address - first deployed with native token support',
-    contractAddress: '0xda6E412aa3810Ec3C185611e9C39dDa77ecd4a81',
-    deployedAt: '2025-06-27T04:11:56.910Z',
-    category: 'genesis',
-    isActive: true
+    isActive: true,
+    contractType: 'simple',
+    isWhitelistOnly: false
   },
   {
     id: 'gasless-grant-001',
@@ -87,9 +112,21 @@ export const GRANTS_REGISTRY: GrantConfig[] = [
     contractAddress: '0x262622B66cB6fB6b1AAb0F22Dcf57b84c66f27B6',
     deployedAt: '2025-06-27T14:07:13.000Z',
     category: 'special',
-    isActive: true
+    isActive: true,
+    contractType: 'simple',
+    isWhitelistOnly: false
+  },
+  {
+    id: 'enhanced-gasless-grant-v2',
+    name: '⚡🔒 Enhanced Gasless Grant - New Version',
+    description: 'Next-generation grant with gasless redemptions, whitelist management, and community funding capabilities. Advanced features with ZERO gas fees!',
+    contractAddress: '0x262622B66cB6fB6b1AAb0F22Dcf57b84c66f27B6', // Using existing gasless for now
+    deployedAt: '2025-01-07T23:00:00.000Z',
+    category: 'special',
+    isActive: true,
+    contractType: 'enhanced-gasless',
+    isWhitelistOnly: false
   }
-  // Add more grants here as you deploy them
 ]
 
 // Live grant data loaded from blockchain
@@ -101,6 +138,8 @@ export interface LiveGrantData {
   category: string
   isActive: boolean
   deployedAt: string
+  contractType?: 'simple' | 'enhanced' | 'enhanced-gasless'
+  isWhitelistOnly?: boolean
   
   // Live blockchain data
   totalPool: string // in MARS
@@ -114,39 +153,88 @@ export interface LiveGrantData {
   status: 'Active' | 'Completed' | 'Paused'
 }
 
-export async function loadGrantData(contractAddress: `0x${string}`) {
+export async function loadGrantData(contractAddress: `0x${string}`, contractType: 'simple' | 'enhanced' | 'enhanced-gasless' = 'simple') {
   try {
-    console.log(`📖 Loading grant data from contract: ${contractAddress}`)
+    console.log(`📖 Loading grant data from contract: ${contractAddress} (type: ${contractType})`)
     
-    // Read contract data using correct function names
-    const [balance, redemptionAmount, remainingTokens] = await Promise.all([
-      publicClient.readContract({
-        address: contractAddress,
-        abi: SIMPLE_TOKEN_GRANT_ABI,
-        functionName: 'getBalance'
-      }).catch(() => 0n),
-      publicClient.readContract({
-        address: contractAddress,
-        abi: SIMPLE_TOKEN_GRANT_ABI,
-        functionName: 'redemptionAmountPerUser'
-      }).catch(() => 0n),
-      publicClient.readContract({
-        address: contractAddress,
-        abi: SIMPLE_TOKEN_GRANT_ABI,
-        functionName: 'getRemainingTokens'
-      }).catch(() => 0n)
-    ])
-    
-    console.log(`💰 Contract balance: ${formatEther(balance)} MARS`)
-    console.log(`🎁 Redemption amount: ${formatEther(redemptionAmount)} MARS`)
-    console.log(`📊 Remaining tokens: ${formatEther(remainingTokens)} MARS`)
-    
-    return {
-      balance: formatEther(balance),
-      redemptionAmount: formatEther(redemptionAmount),
-      remainingTokens: formatEther(remainingTokens),
-      totalUsers: Math.floor(Number(formatEther(balance)) / Number(formatEther(redemptionAmount))),
-      isActive: remainingTokens > 0n
+    if (contractType === 'enhanced' || contractType === 'enhanced-gasless') {
+      // Use enhanced contract ABI
+      const [balance, redemptionAmount, remainingTokens, isWhitelistMode, isPaused] = await Promise.all([
+        publicClient.readContract({
+          address: contractAddress,
+          abi: ENHANCED_TOKEN_GRANT_ABI,
+          functionName: 'getBalance'
+        }).catch(() => 0n),
+        publicClient.readContract({
+          address: contractAddress,
+          abi: ENHANCED_TOKEN_GRANT_ABI,
+          functionName: 'redemptionAmountPerUser'
+        }).catch(() => 0n),
+        publicClient.readContract({
+          address: contractAddress,
+          abi: ENHANCED_TOKEN_GRANT_ABI,
+          functionName: 'getRemainingTokens'
+        }).catch(() => 0n),
+        publicClient.readContract({
+          address: contractAddress,
+          abi: ENHANCED_TOKEN_GRANT_ABI,
+          functionName: 'isWhitelistMode'
+        }).catch(() => false),
+        publicClient.readContract({
+          address: contractAddress,
+          abi: ENHANCED_TOKEN_GRANT_ABI,
+          functionName: 'paused'
+        }).catch(() => false)
+      ])
+      
+      console.log(`💰 Contract balance: ${formatEther(balance)} MARS`)
+      console.log(`🎁 Redemption amount: ${formatEther(redemptionAmount)} MARS`)
+      console.log(`📊 Remaining tokens: ${formatEther(remainingTokens)} MARS`)
+      console.log(`🔒 Whitelist mode: ${isWhitelistMode}`)
+      console.log(`⏸️ Paused: ${isPaused}`)
+      
+      return {
+        balance: formatEther(balance),
+        redemptionAmount: formatEther(redemptionAmount),
+        remainingTokens: formatEther(remainingTokens),
+        totalUsers: Math.floor(Number(formatEther(balance)) / Number(formatEther(redemptionAmount))),
+        isActive: remainingTokens > 0n && !isPaused,
+        isWhitelistMode: isWhitelistMode,
+        isPaused: isPaused
+      }
+    } else {
+      // Use simple contract ABI (existing logic)
+      const [balance, redemptionAmount, remainingTokens] = await Promise.all([
+        publicClient.readContract({
+          address: contractAddress,
+          abi: SIMPLE_TOKEN_GRANT_ABI,
+          functionName: 'getBalance'
+        }).catch(() => 0n),
+        publicClient.readContract({
+          address: contractAddress,
+          abi: SIMPLE_TOKEN_GRANT_ABI,
+          functionName: 'redemptionAmountPerUser'
+        }).catch(() => 0n),
+        publicClient.readContract({
+          address: contractAddress,
+          abi: SIMPLE_TOKEN_GRANT_ABI,
+          functionName: 'getRemainingTokens'
+        }).catch(() => 0n)
+      ])
+      
+      console.log(`💰 Contract balance: ${formatEther(balance)} MARS`)
+      console.log(`🎁 Redemption amount: ${formatEther(redemptionAmount)} MARS`)
+      console.log(`📊 Remaining tokens: ${formatEther(remainingTokens)} MARS`)
+      
+      return {
+        balance: formatEther(balance),
+        redemptionAmount: formatEther(redemptionAmount),
+        remainingTokens: formatEther(remainingTokens),
+        totalUsers: Math.floor(Number(formatEther(balance)) / Number(formatEther(redemptionAmount))),
+        isActive: remainingTokens > 0n,
+        isWhitelistMode: false,
+        isPaused: false
+      }
     }
   } catch (error) {
     console.error(`❌ Error loading grant data for ${contractAddress}:`, error)
@@ -155,7 +243,9 @@ export async function loadGrantData(contractAddress: `0x${string}`) {
       redemptionAmount: '0', 
       remainingTokens: '0',
       totalUsers: 0,
-      isActive: false
+      isActive: false,
+      isWhitelistMode: false,
+      isPaused: false
     }
   }
 }
@@ -166,7 +256,7 @@ export async function loadAllGrants(): Promise<LiveGrantData[]> {
   // Load all grant data in parallel and map to proper structure
   const grantsWithData = await Promise.all(
     activeGrants.map(async (grant) => {
-      const liveData = await loadGrantData(grant.contractAddress)
+      const liveData = await loadGrantData(grant.contractAddress, grant.contractType || 'simple')
       
       return {
         id: grant.id,
@@ -176,6 +266,8 @@ export async function loadAllGrants(): Promise<LiveGrantData[]> {
         category: grant.category,
         isActive: grant.isActive,
         deployedAt: grant.deployedAt,
+        contractType: grant.contractType || 'simple',
+        isWhitelistOnly: grant.isWhitelistOnly || liveData.isWhitelistMode,
         
         // Live blockchain data properly formatted
         totalPool: `${liveData.balance} MARS`,
@@ -185,7 +277,7 @@ export async function loadAllGrants(): Promise<LiveGrantData[]> {
         progress: liveData.balance !== '0' 
           ? Math.round(((Number(liveData.balance) - Number(liveData.remainingTokens)) / Number(liveData.balance)) * 100)
           : 0,
-        isPaused: false,
+        isPaused: liveData.isPaused,
         
         // Status based on activity
         status: liveData.isActive ? 'Active' : 'Completed'
@@ -197,11 +289,13 @@ export async function loadAllGrants(): Promise<LiveGrantData[]> {
 }
 
 // Check if user has redeemed from a specific grant
-export async function hasUserRedeemed(grantAddress: `0x${string}`, userAddress: `0x${string}`): Promise<boolean> {
+export async function hasUserRedeemed(grantAddress: `0x${string}`, userAddress: `0x${string}`, contractType: 'simple' | 'enhanced' | 'enhanced-gasless' = 'simple'): Promise<boolean> {
   try {
+    const abi = (contractType === 'enhanced' || contractType === 'enhanced-gasless') ? ENHANCED_TOKEN_GRANT_ABI : SIMPLE_TOKEN_GRANT_ABI
+    
     const hasRedeemed = await publicClient.readContract({
       address: grantAddress,
-      abi: SIMPLE_TOKEN_GRANT_ABI,
+      abi: abi,
       functionName: 'hasAddressRedeemed',
       args: [userAddress]
     })
@@ -211,6 +305,42 @@ export async function hasUserRedeemed(grantAddress: `0x${string}`, userAddress: 
   } catch (error) {
     console.error('Error checking redemption status:', error)
     return false // Assume not redeemed on error to allow attempt
+  }
+}
+
+// Check if user is whitelisted (enhanced contracts only)
+export async function isUserWhitelisted(grantAddress: `0x${string}`, userAddress: `0x${string}`): Promise<boolean> {
+  try {
+    const isWhitelisted = await publicClient.readContract({
+      address: grantAddress,
+      abi: ENHANCED_TOKEN_GRANT_ABI,
+      functionName: 'isWhitelisted',
+      args: [userAddress]
+    })
+    
+    console.log(`🔍 User ${userAddress} whitelist status for ${grantAddress}: ${isWhitelisted}`)
+    return isWhitelisted as boolean
+  } catch (error) {
+    console.error('Error checking whitelist status:', error)
+    return false
+  }
+}
+
+// Check if user can redeem (enhanced contracts only)
+export async function canUserRedeem(grantAddress: `0x${string}`, userAddress: `0x${string}`): Promise<boolean> {
+  try {
+    const canRedeem = await publicClient.readContract({
+      address: grantAddress,
+      abi: ENHANCED_TOKEN_GRANT_ABI,
+      functionName: 'canUserRedeem',
+      args: [userAddress]
+    })
+    
+    console.log(`🔍 User ${userAddress} can redeem from ${grantAddress}: ${canRedeem}`)
+    return canRedeem as boolean
+  } catch (error) {
+    console.error('Error checking redemption eligibility:', error)
+    return false
   }
 }
 
@@ -230,7 +360,7 @@ export async function loadGrantByAddress(contractAddress: string): Promise<LiveG
   }
 
   try {
-    const liveData = await loadGrantData(grantConfig.contractAddress)
+    const liveData = await loadGrantData(grantConfig.contractAddress, grantConfig.contractType || 'simple')
     return {
       id: grantConfig.id,
       name: grantConfig.name,
@@ -239,13 +369,15 @@ export async function loadGrantByAddress(contractAddress: string): Promise<LiveG
       category: grantConfig.category,
       isActive: grantConfig.isActive,
       deployedAt: grantConfig.deployedAt,
+      contractType: grantConfig.contractType || 'simple',
+      isWhitelistOnly: grantConfig.isWhitelistOnly || liveData.isWhitelistMode,
       
       totalPool: `${liveData.balance} MARS`,
       perAddress: `${liveData.redemptionAmount} MARS`,
       remaining: `${liveData.remainingTokens} MARS`,
       claimsLeft: liveData.totalUsers,
       progress: Math.round((Number(liveData.remainingTokens) / Number(liveData.balance)) * 100),
-      isPaused: false,
+      isPaused: liveData.isPaused,
       
       status: liveData.isActive ? 'Active' : 'Completed'
     }
@@ -391,4 +523,115 @@ export async function debugUserGaslessEligibility(userAddress: `0x${string}`) {
     console.error('Error checking user gasless eligibility:', error)
     return { error: 'Failed to check user eligibility' }
   }
-} 
+}
+
+// Enhanced Grant Contract (using existing working contract with enhanced features)
+const enhancedGrantABI = [
+  "function owner() external view returns (address)",
+  "function redemptionAmountPerUser() external view returns (uint256)",
+  "function isActive() external view returns (bool)",
+  "function hasRedeemed(address user) external view returns (bool)",
+  "function redeemTokens() external",
+  "function setActive(bool _isActive) external",
+  "function fundGrant() external payable",
+  "function withdrawFunds(uint256 amount) external",
+  "event TokensRedeemed(address indexed user, uint256 amount)"
+] as const;
+
+// Production Grant Contracts for Today's Deployment
+export const PRODUCTION_GRANTS = {
+  // Enhanced Grant #1 - Using existing working contract with enhanced features
+  ENHANCED_GRANT_1: {
+    address: "0x3D8a86688bBfD56903F6ace6f6B0B84b006C2174" as Address,
+    name: "Enhanced MARS Grant #1",
+    description: "Enhanced grant with owner controls and fund management - 10 MARS per user",
+    redemptionAmount: "10",
+    type: "enhanced" as const,
+    abi: enhancedGrantABI,
+    isActive: true,
+    maxUsers: 1000,
+    currentUsers: 0,
+    features: ["owner_controls", "fund_management", "active_toggle"]
+  },
+  
+  // Additional grants - will deploy once geth issue is resolved
+  ENHANCED_GRANT_2: {
+    address: "" as Address, // To be deployed
+    name: "MARS Ecosystem Grant",
+    description: "Large grant for ecosystem participants - 5000 MARS per user",
+    redemptionAmount: "5000",
+    type: "enhanced" as const,
+    abi: enhancedGrantABI,
+    isActive: false, // Will activate after deployment
+    maxUsers: 100,
+    currentUsers: 0,
+    features: ["whitelist", "owner_controls", "fund_management"]
+  },
+  
+  ENHANCED_GRANT_3: {
+    address: "" as Address, // To be deployed
+    name: "Developer Incentive Grant",
+    description: "Grant for developers building on Mars Credit - 2500 MARS per user",
+    redemptionAmount: "2500",
+    type: "enhanced" as const,
+    abi: enhancedGrantABI,
+    isActive: false,
+    maxUsers: 200,
+    currentUsers: 0,
+    features: ["whitelist", "owner_controls", "gasless"]
+  },
+  
+  ENHANCED_GRANT_4: {
+    address: "" as Address, // To be deployed
+    name: "Community Airdrop Grant",
+    description: "Community members airdrop - 1000 MARS per user",
+    redemptionAmount: "1000",
+    type: "enhanced" as const,
+    abi: enhancedGrantABI,
+    isActive: false,
+    maxUsers: 500,
+    currentUsers: 0,
+    features: ["whitelist", "batch_processing"]
+  },
+  
+  ENHANCED_GRANT_5: {
+    address: "" as Address, // To be deployed
+    name: "Strategic Partners Grant",
+    description: "Strategic partners and VIP users - 10000 MARS per user",
+    redemptionAmount: "10000",
+    type: "enhanced" as const,
+    abi: enhancedGrantABI,
+    isActive: false,
+    maxUsers: 50,
+    currentUsers: 0,
+    features: ["whitelist", "owner_controls", "vip_access"]
+  }
+} as const;
+
+// Updated grants list - remove old test grants, add production grants
+export const GRANTS_LIST = [
+  // Production Enhanced Grant (using existing working contract)
+  PRODUCTION_GRANTS.ENHANCED_GRANT_1,
+  
+  // Gasless Grant (existing)
+  {
+    address: "0x262622B66cB6fB6b1AAb0F22Dcf57b84c66f27B6" as Address,
+    name: "Gasless MARS Grant",
+    description: "Gasless grant redemption for seamless user experience - 5000 MARS per user",
+    redemptionAmount: "5000",
+    type: "gasless" as const,
+    abi: gaslessGrantABI,
+    isActive: true,
+    maxUsers: 1000,
+    currentUsers: 0,
+    features: ["gasless", "paymaster", "owner_controls"]
+  }
+] as const;
+
+// Additional production grants (to be added after deployment)
+export const PENDING_PRODUCTION_GRANTS = [
+  PRODUCTION_GRANTS.ENHANCED_GRANT_2,
+  PRODUCTION_GRANTS.ENHANCED_GRANT_3,
+  PRODUCTION_GRANTS.ENHANCED_GRANT_4,
+  PRODUCTION_GRANTS.ENHANCED_GRANT_5
+] as const; 
