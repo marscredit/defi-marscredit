@@ -14,8 +14,8 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-# Clean install with legacy peer deps to handle any remaining conflicts
-RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+# Install ALL dependencies (including devDependencies) needed for build
+RUN npm ci --legacy-peer-deps --include=dev || npm install --legacy-peer-deps
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -29,6 +29,9 @@ ENV NEXT_PRIVATE_STANDALONE=true
 
 # Build the application
 RUN npm run build
+
+# Remove devDependencies to reduce final image size
+RUN npm prune --omit=dev
 
 # Production image, copy all the files and run next
 FROM base AS runner
