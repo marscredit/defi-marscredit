@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { WalletDropdown } from '@/components/WalletDropdown'
 
 const Navigation = () => {
@@ -22,13 +23,16 @@ const Navigation = () => {
       <div className="mars-container">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-700 rounded-full mars-planet flex items-center justify-center">
-              <span className="text-white font-bold text-sm">M</span>
+          <Link href="/" className="group">
+            <div className="relative w-[108px] h-12">
+              <Image
+                src="/mars_network_logo.png"
+                alt="Mars Credit Logo"
+                width={108}
+                height={48}
+                className="object-contain group-hover:scale-105 transition-transform duration-200"
+              />
             </div>
-            <span className="text-xl font-bold mars-glow-text group-hover:text-red-400 transition-colors">
-              Mars Credit
-            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -45,8 +49,22 @@ const Navigation = () => {
             ))}
           </div>
 
-          {/* Wallet Connection */}
-          <div className="hidden md:flex items-center">
+          {/* Network Status & Wallet Connection */}
+          <div className="hidden md:flex items-center space-x-4">
+            {/* Network Indicator */}
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-red-600/20 border border-red-600/30 rounded-full">
+              <div className="relative w-5 h-5">
+                <Image
+                  src="/marscredit_square_transparent_256.png"
+                  alt="Mars Network"
+                  width={20}
+                  height={20}
+                  className="object-contain"
+                />
+              </div>
+              <span className="text-xs text-red-300 font-medium">Mars Network</span>
+            </div>
+            
             <WalletDropdown />
           </div>
 
@@ -97,7 +115,21 @@ const Navigation = () => {
               ))}
               
               {/* Mobile Wallet Connection */}
-              <div className="pt-4 border-t border-red-600/30 flex justify-center">
+              <div className="pt-4 border-t border-red-600/30 flex flex-col items-center space-y-3">
+                {/* Network Indicator - Mobile */}
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-red-600/20 border border-red-600/30 rounded-full">
+                  <div className="relative w-5 h-5">
+                    <Image
+                      src="/marscredit_square_transparent_256.png"
+                      alt="Mars Network"
+                      width={20}
+                      height={20}
+                      className="object-contain"
+                    />
+                  </div>
+                  <span className="text-xs text-red-300 font-medium">Mars Network</span>
+                </div>
+                
                 <WalletDropdown />
               </div>
             </div>

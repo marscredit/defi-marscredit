@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import Navigation from './Navigation'
 
 interface LayoutProps {
@@ -36,9 +37,15 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Logo and Description */}
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-700 rounded-full mars-planet flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">M</span>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="relative w-10 h-10">
+                  <Image
+                    src="/marscredit_square_transparent_256.png"
+                    alt="Mars Credit Logo"
+                    width={40}
+                    height={40}
+                    className="object-contain"
+                  />
                 </div>
                 <span className="text-xl font-bold mars-glow-text">Mars Credit</span>
               </div>
