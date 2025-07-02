@@ -18,7 +18,7 @@ async function main() {
     console.log('🔐 Deployer:', account.address);
     
     // Contract addresses
-    const paymasterAddress = '0xd29d35EF4D539900631E2E7322d716Cbc2c0a5FF'; // Deployed paymaster
+    const paymasterAddress = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4'; // Deployed paymaster
     const testGrantAddress = '0xFde59B4b965b6B0A9817F050261244Fe5f99B911'; // Enhanced Test Genesis Grant
     
     console.log('💰 Paymaster:', paymasterAddress);

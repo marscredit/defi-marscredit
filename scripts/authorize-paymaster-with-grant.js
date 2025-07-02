@@ -19,7 +19,7 @@ async function main() {
     
     // Contract addresses
     const testGrantAddress = '0xFde59B4b965b6B0A9817F050261244Fe5f99B911';
-    const paymasterAddress = '0xd29d35EF4D539900631E2E7322d716Cbc2c0a5FF';
+    const paymasterAddress = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4';
     
     console.log('🎯 Grant Contract:', testGrantAddress);
     console.log('💰 Paymaster Address:', paymasterAddress);

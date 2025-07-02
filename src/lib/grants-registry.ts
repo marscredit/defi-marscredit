@@ -19,7 +19,7 @@ export const SIMPLE_TOKEN_GRANT_ABI = [
   'function redeemTokens() external'
 ] as const
 
-export const MARS_GRANT_PAYMASTER_ABI = [
+export const MARS_GRANT_PAYMASTER_ABI = parseAbi([
   'function owner() view returns (address)',
   'function getBalance() view returns (uint256)',
   'function totalGasSponsored() view returns (uint256)',
@@ -29,7 +29,7 @@ export const MARS_GRANT_PAYMASTER_ABI = [
   'function canUseSponsoredTransaction(address) view returns (bool)',
   'function getBlocksUntilNextSponsorship(address) view returns (uint256)',
   'function sponsoredRedemption(address) external'
-] as const
+])
 
 // PaymasterEnabledGrant contract ABI (enhanced version with gasless support)
 export const PAYMASTER_ENABLED_GRANT_ABI = parseAbi([
@@ -48,7 +48,33 @@ export const PAYMASTER_ENABLED_GRANT_ABI = parseAbi([
 ])
 
 // Paymaster contract address - DEPLOYED!
-export const PAYMASTER_CONTRACT_ADDRESS: `0x${string}` = '0xd29d35EF4D539900631E2E7322d716Cbc2c0a5FF'
+export const PAYMASTER_CONTRACT_ADDRESS: `0x${string}` = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4'
+
+// Simple test function to verify paymaster contract connection
+export async function testPaymasterConnection() {
+  console.log('🧪 TESTING PAYMASTER CONNECTION')
+  console.log('==============================')
+  console.log('📍 Paymaster Address:', PAYMASTER_CONTRACT_ADDRESS)
+  console.log('🌐 PublicClient Chain ID:', publicClient.chain?.id)
+  console.log('🔗 PublicClient RPC URL:', publicClient.transport?.url || 'Unknown')
+  
+  try {
+    // Test basic contract existence
+    const code = await publicClient.getBytecode({ address: PAYMASTER_CONTRACT_ADDRESS })
+    console.log('📊 Contract bytecode length:', code?.length || 0)
+    
+    if (!code || code === '0x') {
+      console.error('❌ CRITICAL: Paymaster contract has no bytecode!')
+      return { error: 'Contract not deployed', address: PAYMASTER_CONTRACT_ADDRESS }
+    }
+    
+    console.log('✅ Paymaster contract exists and has bytecode')
+    return { success: true, address: PAYMASTER_CONTRACT_ADDRESS, bytecodeLength: code.length }
+  } catch (error) {
+    console.error('❌ Failed to test paymaster connection:', error)
+    return { error: error.message, address: PAYMASTER_CONTRACT_ADDRESS }
+  }
+}
 
 // ENHANCED GASLESS GRANT ABI (with whitelist and gasless functionality)
 export const gaslessGrantABI = parseAbi([
@@ -128,59 +154,59 @@ export interface GrantConfig {
 
 export const GRANTS_REGISTRY: GrantConfig[] = [
   {
-    id: 'enhanced-grant-1-test-genesis',
-    name: '🧪 Enhanced Test Genesis Grant',
-    description: 'Test Genesis Grant - 10 MARS per user. Perfect for testing and development with enhanced features.',
-    contractAddress: '0xFde59B4b965b6B0A9817F050261244Fe5f99B911',
-    deployedAt: '2025-07-01T21:18:34.320Z',
-    category: 'genesis',
-    isActive: true,
-    contractType: 'enhanced-gasless',
-    isWhitelistOnly: false
-  },
-  {
-    id: 'enhanced-grant-2-ecosystem',
-    name: '🌟 Ecosystem Participants Grant',
-    description: 'Ecosystem Participants - 5000 MARS per user (Whitelist Only). For verified ecosystem contributors.',
-    contractAddress: '0x38a94CD190Fd077d0E61f69878780766733f8a4d',
-    deployedAt: '2025-07-01T21:18:34.320Z',
-    category: 'special',
-    isActive: true,
-    contractType: 'enhanced-gasless',
-    isWhitelistOnly: true
-  },
-  {
-    id: 'enhanced-grant-3-developer',
-    name: '👩‍💻 Developer Incentives Grant',
-    description: 'Developer Incentives - 2500 MARS per user (Whitelist Only). Rewarding our amazing builders!',
-    contractAddress: '0x98505dA2060aEaB64003e51ea11eC856D468F293',
-    deployedAt: '2025-07-01T21:18:34.320Z',
-    category: 'developer',
-    isActive: true,
-    contractType: 'enhanced-gasless',
-    isWhitelistOnly: true
-  },
-  {
-    id: 'enhanced-grant-4-community',
-    name: '🎉 Community Airdrop Grant',
-    description: 'Community Airdrop - 1000 MARS per user (Public). Open to all community members!',
-    contractAddress: '0x672AE0779Fec18eb2eEe0fBd609c45f75CB3fBC9',
-    deployedAt: '2025-07-01T21:18:34.320Z',
+    id: 'intract-campaign-winners',
+    name: 'Intract Campaign Reward Distribution',
+    description: 'A targeted incentive program rewarding the top 10,000 participants of the Intract campaign. Each qualifying address will receive 500 MARS tokens, totaling 5,000,000 MARS in distribution. This grant aims to recognize community engagement and drive awareness of Mars Credit through the Intract platform.',
+    contractAddress: '0x43dCc37b47C3E4372227a5a75c46e9bAC459ba15' as `0x${string}`,
+    deployedAt: '2025-07-02T01:59:00.000Z',
     category: 'community',
     isActive: true,
     contractType: 'enhanced-gasless',
     isWhitelistOnly: false
   },
   {
-    id: 'enhanced-grant-5-strategic',
-    name: '🚀 Strategic Partners Grant',
-    description: 'Strategic Partners - 10000 MARS per user (Whitelist Only). Exclusive rewards for key partners.',
-    contractAddress: '0x66647478F2dEe1a26186851E1905f591C520494c',
-    deployedAt: '2025-07-01T21:18:34.320Z',
+    id: 'coingecko-listing-bounty',
+    name: 'CoinGecko Listing Bounty',
+    description: 'A 1,000,000 MARS token grant allocated to secure Mars Credit\'s official listing on CoinGecko. This strategic listing will enhance visibility and legitimacy across the crypto community, making token information publicly accessible to millions of CoinGecko users.',
+    contractAddress: '0xa41B1fd3b51E041144c58AA7cCeD5BDA5D3Ea1e3' as `0x${string}`,
+    deployedAt: '2025-07-02T01:48:00.000Z',
     category: 'special',
     isActive: true,
-    contractType: 'enhanced-gasless',
+    contractType: 'enhanced',
     isWhitelistOnly: true
+  },
+  {
+    id: 'coinmarketcap-listing-bounty',
+    name: 'CoinMarketCap Listing Bounty',
+    description: 'A 1,000,000 MARS reward grant dedicated to achieving a successful listing of Mars Credit on CoinMarketCap. This listing is crucial for driving traffic, increasing discoverability, and enabling global price tracking, ultimately boosting investor confidence and transparency.',
+    contractAddress: '0x0A2620840FA64aF740dcE448AD2EE4c4BB64ba47' as `0x${string}`,
+    deployedAt: '2025-07-02T01:48:30.000Z',
+    category: 'special',
+    isActive: true,
+    contractType: 'enhanced',
+    isWhitelistOnly: true
+  },
+  {
+    id: 'mining-pool-integration',
+    name: 'Mining Pool Integration Grant',
+    description: 'A 2,500,000 MARS grant to incentivize integration of Mars Credit into established mining pools. By supporting this listing, Mars aims to expand mining capacity, improve network stability, and attract more miners, enhancing decentralization and hash power availability.',
+    contractAddress: '0xe6F14950cfBe2E746784636c00a9F98E66767fF6' as `0x${string}`,
+    deployedAt: '2025-07-02T01:49:00.000Z',
+    category: 'developer',
+    isActive: true,
+    contractType: 'enhanced',
+    isWhitelistOnly: true
+  },
+  {
+    id: 'early-supporter-faucet',
+    name: 'Early Supporter Faucet',
+    description: 'A 500,000 MARS grant to incentivize early supporters to deploy smart contract. Each wallet is eligible for 25 MARS.',
+    contractAddress: '0x86a81bc61877ad37735FC03B4E7736ff6716EE6b' as `0x${string}`,
+    deployedAt: '2025-07-02T01:49:30.000Z',
+    category: 'genesis',
+    isActive: true,
+    contractType: 'enhanced',
+    isWhitelistOnly: false
   }
 ]
 
@@ -520,24 +546,53 @@ export async function isGrantAuthorizedForGasless(grantAddress: `0x${string}`): 
 
 // Debug functions for paymaster
 export async function debugPaymasterStatus() {
+  console.log('🔍 DEBUGGING PAYMASTER STATUS')
+  console.log('============================')
+  console.log('💰 Paymaster Address:', PAYMASTER_CONTRACT_ADDRESS)
+  console.log('📋 ABI Functions:', MARS_GRANT_PAYMASTER_ABI.length, 'functions loaded')
+  
   try {
-    const balance = await publicClient.readContract({
-      address: PAYMASTER_CONTRACT_ADDRESS,
-      abi: MARS_GRANT_PAYMASTER_ABI,
-      functionName: 'getBalance'
-    })
+    // Test each function individually to see which ones fail
+    let balance, totalSponsored, rateLimit
     
-    const totalSponsored = await publicClient.readContract({
-      address: PAYMASTER_CONTRACT_ADDRESS,
-      abi: MARS_GRANT_PAYMASTER_ABI,
-      functionName: 'totalGasSponsored'
-    })
+    try {
+      console.log('🧪 Testing getBalance()...')
+      balance = await publicClient.readContract({
+        address: PAYMASTER_CONTRACT_ADDRESS,
+        abi: MARS_GRANT_PAYMASTER_ABI,
+        functionName: 'getBalance'
+      })
+      console.log('✅ getBalance() successful:', formatEther(balance), 'MARS')
+    } catch (error) {
+      console.error('❌ getBalance() failed:', error)
+      balance = 0n
+    }
     
-    const rateLimit = await publicClient.readContract({
-      address: PAYMASTER_CONTRACT_ADDRESS,
-      abi: MARS_GRANT_PAYMASTER_ABI,
-      functionName: 'rateLimitBlocks'
-    })
+    try {
+      console.log('🧪 Testing totalGasSponsored()...')
+      totalSponsored = await publicClient.readContract({
+        address: PAYMASTER_CONTRACT_ADDRESS,
+        abi: MARS_GRANT_PAYMASTER_ABI,
+        functionName: 'totalGasSponsored'
+      })
+      console.log('✅ totalGasSponsored() successful:', formatEther(totalSponsored), 'MARS')
+    } catch (error) {
+      console.error('❌ totalGasSponsored() failed:', error)
+      totalSponsored = 0n
+    }
+    
+    try {
+      console.log('🧪 Testing rateLimitBlocks()...')
+      rateLimit = await publicClient.readContract({
+        address: PAYMASTER_CONTRACT_ADDRESS,
+        abi: MARS_GRANT_PAYMASTER_ABI,
+        functionName: 'rateLimitBlocks'
+      })
+      console.log('✅ rateLimitBlocks() successful:', rateLimit.toString())
+    } catch (error) {
+      console.error('❌ rateLimitBlocks() failed:', error)
+      rateLimit = 0n
+    }
 
     return {
       isDeployed: true,
@@ -546,50 +601,88 @@ export async function debugPaymasterStatus() {
       rateLimit: rateLimit.toString()
     }
   } catch (error) {
-    console.error('Error debugging paymaster:', error)
-    return { error: 'Failed to read paymaster data' }
+    console.error('❌ Critical paymaster debug error:', error)
+    return { error: 'Failed to read paymaster data', details: error.message }
   }
 }
 
 export async function debugGrantAuthorization(grantAddress: `0x${string}`) {
+  console.log('🔍 DEBUGGING GRANT AUTHORIZATION')
+  console.log('===============================')
+  console.log('💰 Paymaster Address:', PAYMASTER_CONTRACT_ADDRESS)
+  console.log('🎯 Grant Address:', grantAddress)
+  
   try {
+    console.log('🧪 Testing authorizedContracts()...')
     const isAuthorized = await publicClient.readContract({
       address: PAYMASTER_CONTRACT_ADDRESS,
       abi: MARS_GRANT_PAYMASTER_ABI,
       functionName: 'authorizedContracts',
       args: [grantAddress]
     })
-
+    
+    console.log('✅ authorizedContracts() successful:', isAuthorized)
     return { isAuthorized }
   } catch (error) {
-    console.error('Error checking grant authorization:', error)
-    return { error: 'Failed to check authorization' }
+    console.error('❌ Grant authorization check failed:', error)
+    console.error('Error details:', {
+      message: error.message,
+      cause: error.cause,
+      stack: error.stack
+    })
+    return { error: 'Failed to check authorization', details: error.message }
   }
 }
 
 export async function debugUserGaslessEligibility(userAddress: `0x${string}`) {
+  console.log('🔍 DEBUGGING USER GASLESS ELIGIBILITY')
+  console.log('====================================')
+  console.log('💰 Paymaster Address:', PAYMASTER_CONTRACT_ADDRESS)
+  console.log('👤 User Address:', userAddress)
+  
   try {
-    const canUse = await publicClient.readContract({
-      address: PAYMASTER_CONTRACT_ADDRESS,
-      abi: MARS_GRANT_PAYMASTER_ABI,
-      functionName: 'canUseSponsoredTransaction',
-      args: [userAddress]
-    })
+    let canUse, blocksUntilNext
     
-    const blocksUntilNext = await publicClient.readContract({
-      address: PAYMASTER_CONTRACT_ADDRESS,
-      abi: MARS_GRANT_PAYMASTER_ABI,
-      functionName: 'getBlocksUntilNextSponsorship',
-      args: [userAddress]
-    })
+    try {
+      console.log('🧪 Testing canUseSponsoredTransaction()...')
+      canUse = await publicClient.readContract({
+        address: PAYMASTER_CONTRACT_ADDRESS,
+        abi: MARS_GRANT_PAYMASTER_ABI,
+        functionName: 'canUseSponsoredTransaction',
+        args: [userAddress]
+      })
+      console.log('✅ canUseSponsoredTransaction() successful:', canUse)
+    } catch (error) {
+      console.error('❌ canUseSponsoredTransaction() failed:', error)
+      canUse = false
+    }
+    
+    try {
+      console.log('🧪 Testing getBlocksUntilNextSponsorship()...')
+      blocksUntilNext = await publicClient.readContract({
+        address: PAYMASTER_CONTRACT_ADDRESS,
+        abi: MARS_GRANT_PAYMASTER_ABI,
+        functionName: 'getBlocksUntilNextSponsorship',
+        args: [userAddress]
+      })
+      console.log('✅ getBlocksUntilNextSponsorship() successful:', Number(blocksUntilNext))
+    } catch (error) {
+      console.error('❌ getBlocksUntilNextSponsorship() failed:', error)
+      blocksUntilNext = 0n
+    }
 
     return {
       canUse,
       blocksUntilNext: Number(blocksUntilNext)
     }
   } catch (error) {
-    console.error('Error checking user gasless eligibility:', error)
-    return { error: 'Failed to check user eligibility' }
+    console.error('❌ Critical user eligibility error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      cause: error.cause,
+      stack: error.stack
+    })
+    return { error: 'Failed to check user eligibility', details: error.message }
   }
 }
 

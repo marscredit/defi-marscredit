@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-07-02T01:49:24.587Z",
+  "network": "marscredit",
+  "deployer": "0x06F0f6935dfe7Aef5947a12cCDa532346a815ccD",
+  "paymaster": "0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4",
+  "deployedContracts": [
+    {
+      "name": "CoinGecko Listing Bounty",
+      "address": "0xa41B1fd3b51E041144c58AA7cCeD5BDA5D3Ea1e3",
+      "rewardAmount": "1000000",
+      "isWhitelistMode": true,
+      "contractType": "enhanced",
+      "description": "A 1,000,000 MARS token grant allocated to secure Mars Credit's official listing on CoinGecko. This strategic listing will enhance visibility and legitimacy across the crypto community, making token information publicly accessible to millions of CoinGecko users."
+    },
+    {
+      "name": "CoinMarketCap Listing Bounty",
+      "address": "0x0A2620840FA64aF740dcE448AD2EE4c4BB64ba47",
+      "rewardAmount": "1000000",
+      "isWhitelistMode": true,
+      "contractType": "enhanced",
+      "description": "A 1,000,000 MARS reward grant dedicated to achieving a successful listing of Mars Credit on CoinMarketCap. This listing is crucial for driving traffic, increasing discoverability, and enabling global price tracking, ultimately boosting investor confidence and transparency."
+    },
+    {
+      "name": "Mining Pool Integration Grant",
+      "address": "0xe6F14950cfBe2E746784636c00a9F98E66767fF6",
+      "rewardAmount": "2500000",
+      "isWhitelistMode": true,
+      "contractType": "enhanced",
+      "description": "A 2,500,000 MARS grant to incentivize integration of Mars Credit into established mining pools. By supporting this listing, Mars aims to expand mining capacity, improve network stability, and attract more miners, enhancing decentralization and hash power availability."
+    },
+    {
+      "name": "Early Supporter Faucet",
+      "address": "0x86a81bc61877ad37735FC03B4E7736ff6716EE6b",
+      "rewardAmount": "25",
+      "isWhitelistMode": false,
+      "contractType": "enhanced",
+      "description": "A 10,000,000 MARS grant to incentivize early supporters to deploy smart contract. Each wallet is eligible for 25 MARS."
+    }
+  ]
+}

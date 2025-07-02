@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useWalletClient } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { 
   MARS_GRANT_PAYMASTER_ABI, 
   PAYMASTER_CONTRACT_ADDRESS,
@@ -27,7 +27,6 @@ export default function GaslessRedemption({
 }: GaslessRedemptionProps) {
   const { address: userAddress, isConnected, chainId } = useAccount()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
-  const { data: walletClient } = useWalletClient()
   const [canUseGasless, setCanUseGasless] = useState(false)
   const [blocksUntilNext, setBlocksUntilNext] = useState(0)
   const [isGrantAuthorized, setIsGrantAuthorized] = useState(false)
@@ -142,67 +141,50 @@ export default function GaslessRedemption({
       return
     }
 
-    if (!walletClient) {
-      console.error('❌ Wallet client not available')
-      return
-    }
-
     // Ensure user is on correct network first
     if (!isCorrectNetwork) {
       await handleSwitchNetwork()
       return
     }
 
-    console.log('🚀 Initiating gasless redemption...')
+    console.log('🚀 Initiating truly gasless redemption via backend...')
     console.log('👤 User Address:', userAddress)
-    console.log('🔗 Wallet Client Account:', walletClient.account?.address)
     console.log('🎯 Grant Address:', grantAddress)
-    console.log('💰 Paymaster Address:', PAYMASTER_CONTRACT_ADDRESS)
-    console.log('⛽ Chain ID:', chainId)
-    console.log('🔗 Wallet Client Chain ID:', walletClient.chain?.id)
-
-    // Validate addresses match
-    if (walletClient.account?.address?.toLowerCase() !== userAddress.toLowerCase()) {
-      console.error('❌ Wallet client address mismatch!')
-      console.error('useAccount address:', userAddress)
-      console.error('walletClient address:', walletClient.account?.address)
-      return
-    }
-
-    // Validate chain matches
-    if (walletClient.chain?.id !== marsCreditNetwork.id) {
-      console.error('❌ Wallet client on wrong chain!')
-      console.error('Expected chain:', marsCreditNetwork.id)
-      console.error('Wallet chain:', walletClient.chain?.id)
-      return
-    }
 
     try {
-      console.log('📝 Calling writeContract directly via wallet client...')
-      
       // Set pending state
       setManualTxState({ isPending: true, isSuccess: false })
       
-      // Add a small delay to ensure wallet connection is fully established
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Call backend API for gasless redemption
+      console.log('📡 Calling backend gasless redemption API...')
       
-      // Double-check wallet connection before transaction
-      if (!walletClient.account) {
-        console.error('❌ Wallet account not available after delay')
-        setManualTxState({ isPending: false, isSuccess: false, error: 'Wallet account not available' })
-        return
-      }
-      
-      // Use wallet client directly instead of wagmi writeContract
-      const hash = await walletClient.writeContract({
-        address: PAYMASTER_CONTRACT_ADDRESS,
-        abi: MARS_GRANT_PAYMASTER_ABI,
-        functionName: 'sponsoredRedemption',
-        args: [grantAddress]
+      const response = await fetch('/api/gasless-redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress,
+          grantAddress
+        })
       })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP ${response.status}`)
+      }
+
+      console.log('✅ Gasless redemption successful!')
+      console.log('📝 Transaction Hash:', result.transactionHash)
+      console.log('⛽ Gas Used:', result.gasUsed)
+      console.log('💰 Gas Paid By: Backend wallet (truly gasless for user!)')
       
-      console.log('✅ Transaction sent with hash:', hash)
-      setManualTxState({ isPending: false, isSuccess: true, hash })
+      setManualTxState({ 
+        isPending: false, 
+        isSuccess: true, 
+        hash: result.transactionHash 
+      })
       
       // Add a delay before calling success callback to show the success state
       setTimeout(() => {
@@ -211,22 +193,29 @@ export default function GaslessRedemption({
         }
       }, 3000) // Show success state for 3 seconds before potentially reloading
       
-    } catch (error) {
-      console.error('❌ Error initiating gasless transaction:', error)
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        data: error.data,
-        cause: error.cause
-      })
+    } catch (error: any) {
+      console.error('❌ Error with gasless redemption:', error)
       
-      setManualTxState({ isPending: false, isSuccess: false, error })
+      let errorMessage = error.message || 'Unknown error occurred'
       
-      // If it's the zero address issue, let's try to reconnect
-      if (error.message?.includes('0x0000000000000000000000000000000000000000')) {
-        console.log('🔄 Detected zero address issue, this might be a wallet connection problem')
-        console.log('💡 Try disconnecting and reconnecting your wallet')
+      // Handle specific API errors
+      if (error.message?.includes('already redeemed')) {
+        errorMessage = 'You have already redeemed from this grant'
+      } else if (error.message?.includes('rate limited')) {
+        errorMessage = 'Please wait ~4 hours between gasless transactions'
+      } else if (error.message?.includes('not authorized')) {
+        errorMessage = 'Grant not authorized for gasless transactions'
+      } else if (error.message?.includes('cannot redeem')) {
+        errorMessage = 'You are not eligible to redeem from this grant'
+      } else if (error.message?.includes('insufficient funds')) {
+        errorMessage = 'Grant has insufficient tokens remaining'
       }
+      
+      setManualTxState({ 
+        isPending: false, 
+        isSuccess: false, 
+        error: { message: errorMessage }
+      })
     }
   }
 

@@ -8,9 +8,6 @@ module.exports = async function(deployer, network, accounts) {
     console.log('Deployer:', accounts[0]);
     console.log('');
 
-    // MARS token address on Mars Credit Network
-    const MARS_TOKEN_ADDRESS = '0x33eDb2392C6DAe67884b0C0B09f34e9eA159Ad1c';
-    
     // Production grant configurations
     const PRODUCTION_GRANTS = [
         {
@@ -71,9 +68,8 @@ module.exports = async function(deployer, network, accounts) {
                 // Deploy EnhancedGaslessGrant (for Intract campaign)
                 contract = await deployer.deploy(
                     EnhancedGaslessGrant,
-                    MARS_TOKEN_ADDRESS,
-                    grant.rewardAmount,
-                    grant.isWhitelistMode,
+                    grant.rewardAmount,     // redemptionAmountPerUser
+                    grant.isWhitelistMode,  // isWhitelistMode
                     {
                         gas: 3000000,
                         gasPrice: web3.utils.toWei('0.1', 'gwei')
@@ -92,9 +88,8 @@ module.exports = async function(deployer, network, accounts) {
                 // Deploy EnhancedTokenGrant (for other grants)
                 contract = await deployer.deploy(
                     EnhancedTokenGrant,
-                    MARS_TOKEN_ADDRESS,
-                    grant.rewardAmount,
-                    grant.isWhitelistMode,
+                    grant.rewardAmount,     // redemptionAmountPerUser
+                    grant.isWhitelistMode,  // isWhitelistMode
                     {
                         gas: 3000000,
                         gasPrice: web3.utils.toWei('0.1', 'gwei')
@@ -140,7 +135,6 @@ module.exports = async function(deployer, network, accounts) {
         network: network,
         deployer: accounts[0],
         paymaster: paymaster,
-        marsTokenAddress: MARS_TOKEN_ADDRESS,
         deployedContracts: deployedContracts
     };
 

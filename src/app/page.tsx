@@ -46,16 +46,23 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <button
+                onClick={() => window.open('https://latoken.com/exchange/MARS_USDT', '_blank')}
+                className="px-8 py-4 mars-button text-white font-semibold rounded-lg text-lg"
+              >
+                Buy MARS
+              </button>
+              
               <Link 
                 href="/grants"
-                className="px-8 py-4 mars-button text-white font-semibold rounded-lg text-lg"
+                className="px-8 py-4 bg-red-900/30 border border-red-600/30 text-red-400 font-semibold rounded-lg text-lg hover:bg-red-900/50 transition-all"
               >
                 View Grants
               </Link>
               
               <Link 
                 href="/dashboard"
-                className="px-8 py-4 mars-button text-white font-semibold rounded-lg text-lg"
+                className="px-8 py-4 bg-red-900/30 border border-red-600/30 text-red-400 font-semibold rounded-lg text-lg hover:bg-red-900/50 transition-all"
               >
                 View Dashboard
               </Link>
