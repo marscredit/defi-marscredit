@@ -8,6 +8,7 @@ import Layout from '@/components/Layout'
 import { formatMarsAmount, truncateAddress } from '@/lib/contracts'
 
 import GaslessRedemption from '@/components/GaslessRedemption'
+import { ConnectWallet } from '@/components/ConnectWallet'
 import { loadGrantByAddress, hasUserRedeemed, LiveGrantData } from '@/lib/grants-registry'
 
 interface TransactionStatus {

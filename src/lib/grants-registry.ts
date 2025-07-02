@@ -48,7 +48,7 @@ export const PAYMASTER_ENABLED_GRANT_ABI = parseAbi([
 ])
 
 // Paymaster contract address - DEPLOYED!
-export const PAYMASTER_CONTRACT_ADDRESS: `0x${string}` = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4'
+export const PAYMASTER_CONTRACT_ADDRESS: `0x${string}` = '0xd29d35EF4D539900631E2E7322d716Cbc2c0a5FF'
 
 // ENHANCED GASLESS GRANT ABI (with whitelist and gasless functionality)
 export const gaslessGrantABI = parseAbi([
