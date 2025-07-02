@@ -70,17 +70,19 @@ const Layout = ({ children }: LayoutProps) => {
             <div>
               <h3 className="text-red-300 font-semibold mb-4">Community</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Discord</a></li>
-                <li><a href="#" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Twitter</a></li>
-                <li><a href="#" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Telegram</a></li>
-                <li><a href="#" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">GitHub</a></li>
+                <li><a href="https://discord.gg/57bg77dCV8" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Discord</a></li>
+                <li><a href="https://www.tiktok.com/@marscreditofficial" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">TikTok</a></li>
+                <li><a href="https://x.com/marscredit" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Twitter</a></li>
+                <li><a href="https://t.me/marscreditxyz" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Telegram Channel</a></li>
+                <li><a href="https://t.me/MarscreditOfficial" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Telegram Group</a></li>
+                <li><a href="https://github.com/marscredit" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">GitHub</a></li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-red-600/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+          <div className="border-t border-red-600/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center pb-8">
             <p className="text-red-400/60 text-sm">
-              © 2024 Mars Credit Network. All rights reserved.
+              © 2025 Mars Credit Network. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-red-400/60 hover:text-red-300 text-sm transition-colors">Terms of Service</a>

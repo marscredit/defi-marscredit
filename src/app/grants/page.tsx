@@ -98,11 +98,11 @@ export default function GrantsPage() {
           {/* Header */}
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 mars-glow-text">
-              Mars Token Grants
+              Mars Grants
             </h1>
             <p className="text-lg text-red-400/80 max-w-3xl mx-auto mb-6">
-              Live token grants on Mars Credit Network. Data loads directly from blockchain contracts.
-              Each address can claim tokens once per grant on a first-come, first-serve basis.
+              Live grants on Mars Credit Network. Data loads directly from blockchain contracts.
+              Each address can claim once per grant on a first-come, first-serve basis.
             </p>
             
             {/* Live Data Indicator */}

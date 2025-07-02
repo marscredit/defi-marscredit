@@ -148,7 +148,7 @@ export default function DashboardPage() {
                     formatMarsAmount(balance?.formatted || '0')
                   )}
                 </div>
-                <p className="text-red-400/80">Available MARS Tokens</p>
+                <p className="text-red-400/80">Available MARS</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                 <h3 className="text-lg font-semibold mb-2 text-red-300">No Transactions Yet</h3>
                 <p className="text-red-400/80 mb-4">
                   {isConnected 
-                    ? "No transaction history found for this wallet on Mars Credit Network. Start by redeeming tokens from available grants."
+                    ? "No transaction history found for this wallet on Mars Credit Network. Start by redeeming from available grants."
                     : "Connect your wallet to view your transaction history."
                   }
                 </p>

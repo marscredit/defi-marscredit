@@ -40,7 +40,7 @@ export default function Home() {
             </h1>
 
             <p className="text-lg md:text-xl text-red-400/80 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Redeem MARS tokens and explore DeFi on our custom blockchain. 
+              Redeem MARS and explore DeFi on our custom blockchain. 
               Welcome to the future of decentralized finance on Mars Credit Network.
             </p>
 
@@ -96,7 +96,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-semibold mb-4 text-red-300">Token Grants</h3>
               <p className="text-red-400/80 mb-6">
-                Redeem MARS tokens through our grant system. Each address can claim tokens once on a first-come, first-serve basis.
+                Redeem MARS through our grant system. Each address can claim once on a first-come, first-serve basis.
               </p>
               <Link href="/grants" className="text-red-400 hover:text-red-300 font-medium inline-flex items-center">
                 Explore Grants

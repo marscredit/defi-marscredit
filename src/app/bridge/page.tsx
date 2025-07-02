@@ -24,7 +24,7 @@ export default function BridgePage() {
               Cross-Chain Bridge
             </h1>
             <p className="text-lg text-red-400/80 max-w-3xl mx-auto">
-              Connect assets across different blockchains seamlessly. 
+              Connect MARS across different blockchains seamlessly. 
               Our bridge functionality is under development and will be available soon.
             </p>
           </div>
