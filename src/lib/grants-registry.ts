@@ -13,6 +13,7 @@ export const publicClient = createPublicClient({
 export const SIMPLE_TOKEN_GRANT_ABI = [
   'function owner() view returns (address)',
   'function getBalance() view returns (uint256)',
+  'function totalTokensAvailable() view returns (uint256)',
   'function redemptionAmountPerUser() view returns (uint256)',
   'function hasAddressRedeemed(address) view returns (bool)',
   'function getRemainingTokens() view returns (uint256)',
@@ -242,11 +243,11 @@ export async function loadGrantData(contractAddress: `0x${string}`, contractType
       // Use the correct ABI based on contract type
       const abi = contractType === 'enhanced-gasless' ? gaslessGrantABI : ENHANCED_TOKEN_GRANT_ABI
       
-      const [balance, redemptionAmount, remainingTokens, isWhitelistMode, isPaused] = await Promise.all([
+      const [totalTokensAvailable, redemptionAmount, remainingTokens, isWhitelistMode, isPaused] = await Promise.all([
         publicClient.readContract({
           address: contractAddress,
           abi: abi,
-          functionName: 'getBalance'
+          functionName: 'totalTokensAvailable'
         }).catch(() => 0n),
         publicClient.readContract({
           address: contractAddress,
@@ -270,28 +271,28 @@ export async function loadGrantData(contractAddress: `0x${string}`, contractType
         }).catch(() => false)
       ])
       
-      console.log(`💰 Contract balance: ${formatEther(balance)} MARS`)
+      console.log(`💰 Total tokens available: ${formatEther(totalTokensAvailable)} MARS`)
       console.log(`🎁 Redemption amount: ${formatEther(redemptionAmount)} MARS`)
       console.log(`📊 Remaining tokens: ${formatEther(remainingTokens)} MARS`)
       console.log(`🔒 Whitelist mode: ${isWhitelistMode}`)
       console.log(`⏸️ Paused: ${isPaused}`)
       
       return {
-        balance: formatEther(balance),
+        balance: formatEther(totalTokensAvailable),
         redemptionAmount: formatEther(redemptionAmount),
         remainingTokens: formatEther(remainingTokens),
-        totalUsers: Math.floor(Number(formatEther(balance)) / Number(formatEther(redemptionAmount))),
+        totalUsers: Math.floor(Number(formatEther(remainingTokens)) / Number(formatEther(redemptionAmount))),
         isActive: remainingTokens > 0n && !isPaused,
         isWhitelistMode: isWhitelistMode,
         isPaused: isPaused
       }
     } else {
       // Use simple contract ABI (existing logic)
-      const [balance, redemptionAmount, remainingTokens] = await Promise.all([
+      const [totalTokensAvailable, redemptionAmount, remainingTokens] = await Promise.all([
         publicClient.readContract({
           address: contractAddress,
           abi: SIMPLE_TOKEN_GRANT_ABI,
-          functionName: 'getBalance'
+          functionName: 'totalTokensAvailable'
         }).catch(() => 0n),
         publicClient.readContract({
           address: contractAddress,
@@ -305,15 +306,15 @@ export async function loadGrantData(contractAddress: `0x${string}`, contractType
         }).catch(() => 0n)
       ])
       
-      console.log(`💰 Contract balance: ${formatEther(balance)} MARS`)
+      console.log(`💰 Total tokens available: ${formatEther(totalTokensAvailable)} MARS`)
       console.log(`🎁 Redemption amount: ${formatEther(redemptionAmount)} MARS`)
       console.log(`📊 Remaining tokens: ${formatEther(remainingTokens)} MARS`)
       
       return {
-        balance: formatEther(balance),
+        balance: formatEther(totalTokensAvailable),
         redemptionAmount: formatEther(redemptionAmount),
         remainingTokens: formatEther(remainingTokens),
-        totalUsers: Math.floor(Number(formatEther(balance)) / Number(formatEther(redemptionAmount))),
+        totalUsers: Math.floor(Number(formatEther(remainingTokens)) / Number(formatEther(redemptionAmount))),
         isActive: remainingTokens > 0n,
         isWhitelistMode: false,
         isPaused: false
@@ -470,7 +471,9 @@ export async function loadGrantByAddress(contractAddress: string): Promise<LiveG
       perAddress: `${liveData.redemptionAmount} MARS`,
       remaining: `${liveData.remainingTokens} MARS`,
       claimsLeft: liveData.totalUsers,
-      progress: Math.round((Number(liveData.remainingTokens) / Number(liveData.balance)) * 100),
+      progress: liveData.balance !== '0' 
+        ? Math.round(((Number(liveData.balance) - Number(liveData.remainingTokens)) / Number(liveData.balance)) * 100)
+        : 0,
       isPaused: liveData.isPaused,
       
       status: liveData.isActive ? 'Active' : 'Completed'
