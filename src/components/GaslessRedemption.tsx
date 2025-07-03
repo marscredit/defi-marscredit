@@ -119,12 +119,12 @@ export default function GaslessRedemption({
     checkGaslessEligibility()
   }, [userAddress, isConnected, grantAddress, manualTxState.isSuccess])
 
-  // Handle successful transaction
+  // Handle successful transaction (for backend API approach)
   useEffect(() => {
-    if (isConfirmed && onSuccess) {
-      onSuccess()
+    if (manualTxState.isSuccess && onSuccess) {
+      // Success already handled in the API response
     }
-  }, [isConfirmed, onSuccess])
+  }, [manualTxState.isSuccess, onSuccess])
 
   // Handle network switching
   const handleSwitchNetwork = async () => {
@@ -147,7 +147,7 @@ export default function GaslessRedemption({
       return
     }
 
-    console.log('🚀 Initiating truly gasless redemption via backend...')
+    console.log('🚀 Initiating TRUE gasless redemption via backend...')
     console.log('👤 User Address:', userAddress)
     console.log('🎯 Grant Address:', grantAddress)
 
@@ -155,7 +155,7 @@ export default function GaslessRedemption({
       // Set pending state
       setManualTxState({ isPending: true, isSuccess: false })
       
-      // Call backend API for gasless redemption
+      // Call backend API for gasless redemption (backend pays all gas!)
       console.log('📡 Calling backend gasless redemption API...')
       
       const response = await fetch('/api/gasless-redeem', {
@@ -175,10 +175,10 @@ export default function GaslessRedemption({
         throw new Error(result.error || `HTTP ${response.status}`)
       }
 
-      console.log('✅ Gasless redemption successful!')
+      console.log('✅ TRUE gasless redemption successful!')
       console.log('📝 Transaction Hash:', result.transactionHash)
       console.log('⛽ Gas Used:', result.gasUsed)
-      console.log('💰 Gas Paid By: Backend wallet (truly gasless for user!)')
+      console.log('💰 Gas Paid By: Backend wallet (100% gasless for user!)')
       
       setManualTxState({ 
         isPending: false, 
