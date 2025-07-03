@@ -423,7 +423,7 @@ export default function GaslessRedemption({
         </button>
 
         {/* Debug Information (for troubleshooting) */}
-        {debugInfo.paymaster && (
+        {debugInfo.paymaster && process.env.NODE_ENV === 'development' && (
           <div className="mt-4 p-3 bg-black/20 rounded-lg border border-gray-600/30">
             <details className="cursor-pointer">
               <summary className="text-sm text-gray-400 hover:text-gray-300">Debug Information</summary>
