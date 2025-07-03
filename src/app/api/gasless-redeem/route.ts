@@ -7,6 +7,10 @@ const NETWORK_CONFIG = {
   chainId: 110110
 }
 
+// CRITICAL: In-memory protection against race conditions
+const pendingRedemptions = new Set<string>() // Track pending redemptions by userAddress
+const redemptionLocks = new Map<string, Promise<any>>() // Prevent concurrent requests per user
+
 const PAYMASTER_ADDRESS = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4'
 const DEPLOYER_PRIVATE_KEY = '0x702f0b3c12108a7341cc1c94ac83a4a4732df139fb75880d13568883244082ea' // From previous deployment
 
@@ -50,6 +54,23 @@ export async function POST(req: NextRequest) {
         error: 'Invalid address format' 
       }, { status: 400 })
     }
+
+    // 🚨 CRITICAL: Prevent race condition attacks
+    const userKey = `${userAddress.toLowerCase()}_${grantAddress.toLowerCase()}`
+    
+    if (pendingRedemptions.has(userKey)) {
+      console.log(`⛔ BLOCKED: User ${userAddress} already has pending redemption for grant ${grantAddress}`)
+      return NextResponse.json({ 
+        error: 'Redemption already in progress for this user and grant. Please wait for current transaction to complete.',
+        details: { userAddress, grantAddress, note: 'Protection against double-redemption attacks' }
+      }, { status: 429 }) // Too Many Requests
+    }
+
+    // Lock this user+grant combination
+    pendingRedemptions.add(userKey)
+    console.log(`🔒 LOCKED: User ${userAddress} for grant ${grantAddress}`)
+
+    try {
 
     // Setup blockchain connection
     const provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.rpcUrl)
@@ -182,6 +203,12 @@ export async function POST(req: NextRequest) {
       }
       
       throw txError // Re-throw to be caught by outer try-catch
+    }
+
+    } finally {
+      // 🔓 CRITICAL: Always unlock user, even on error
+      pendingRedemptions.delete(userKey)
+      console.log(`🔓 UNLOCKED: User ${userAddress} for grant ${grantAddress}`)
     }
 
   } catch (error: any) {
