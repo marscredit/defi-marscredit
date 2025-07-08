@@ -12,7 +12,11 @@ const pendingRedemptions = new Set<string>() // Track pending redemptions by use
 const redemptionLocks = new Map<string, Promise<any>>() // Prevent concurrent requests per user
 
 const PAYMASTER_ADDRESS = '0x0adA42cefCa7e464D4aC91d39c9C2E1F51b6B2F4'
-const DEPLOYER_PRIVATE_KEY = '0x702f0b3c12108a7341cc1c94ac83a4a4732df139fb75880d13568883244082ea' // From previous deployment
+const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY // Private key from environment
+
+if (!DEPLOYER_PRIVATE_KEY) {
+  throw new Error('DEPLOYER_PRIVATE_KEY environment variable is required')
+}
 
 const PAYMASTER_ABI = [
   'function sponsoredRedemption(address grantContract) external',

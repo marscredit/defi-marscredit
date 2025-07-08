@@ -1,0 +1,74 @@
+# Mars Bridge Production Environment Configuration Template
+# Copy these variables to your production environment
+
+# ==========================================
+# BRIDGE CONTRACT ADDRESSES
+# ==========================================
+BRIDGE_CONTRACT_ADDRESS=0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba
+MARS_MINT_ADDRESS=uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b
+MARS_TOKEN_ACCOUNT=29zqmJEVmhXrqbDSW5TJYdGzPLvJQKLXzLwTWjqLf3J4
+
+# ==========================================
+# NETWORK CONFIGURATION
+# ==========================================
+L1_RPC_URL=https://rpc.marscredit.xyz
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+
+# ==========================================
+# RELAYER SECURITY (KEEP THESE SECURE!)
+# ==========================================
+# L1 (Mars Credit Network) private key for the relayer wallet
+RELAYER_PRIVATE_KEY=YOUR_L1_PRIVATE_KEY_HERE
+
+# Solana private key as array format: [num1,num2,num3,...]
+SOLANA_PRIVATE_KEY=[YOUR_SOLANA_PRIVATE_KEY_ARRAY_HERE]
+
+# ==========================================
+# APPLICATION CONFIGURATION
+# ==========================================
+NODE_ENV=production
+PORT=3000
+
+# ==========================================
+# OPTIONAL: ENHANCED MONITORING
+# ==========================================
+# Health check port for monitoring
+HEALTH_CHECK_PORT=8080
+
+# Discord webhook for alerts (optional)
+DISCORD_WEBHOOK_URL=
+
+# Slack webhook for alerts (optional)
+SLACK_WEBHOOK_URL=
+
+# ==========================================
+# OPTIONAL: PERFORMANCE TUNING
+# ==========================================
+# Polling interval in milliseconds (default: 10000)
+POLLING_INTERVAL=10000
+
+# Maximum retry attempts for failed transactions
+MAX_RETRY_ATTEMPTS=3
+
+# Transaction confirmation blocks to wait
+CONFIRMATION_BLOCKS=2
+
+# ==========================================
+# INSTRUCTIONS
+# ==========================================
+# 1. Copy these variables to your production environment
+# 2. Fill in your actual values (remove the YOUR_*_HERE placeholders)
+# 3. Ensure your relayer wallets have sufficient balance:
+#    - L1 wallet: Need MARS for gas fees
+#    - Solana wallet: Need SOL for transaction fees
+# 4. Test locally first: npm run bridge:start:production
+# 5. Deploy to your chosen platform with these environment variables
+
+# ==========================================
+# SECURITY NOTES
+# ==========================================
+# - Never commit production keys to version control
+# - Use secure environment variable management in production
+# - Keep backup copies of your private keys in secure offline storage
+# - Regularly rotate keys and update dependencies
+# - Monitor for suspicious activity 

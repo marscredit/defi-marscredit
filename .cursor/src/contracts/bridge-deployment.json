@@ -1,0 +1,10 @@
+{
+  "bridgeContract": "0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba",
+  "network": "marscredit",
+  "chainId": 110110,
+  "deployedAt": "2025-07-08T01:26:58.405Z",
+  "deployer": "0x06F0f6935dfe7Aef5947a12cCDa532346a815ccD",
+  "minBridgeAmount": "10000000000000000000",
+  "maxBridgeAmount": "1000000000000000000000000",
+  "bridgeFeePercentage": "10"
+}

@@ -13,13 +13,22 @@ states/
 # Environment files
 .env
 .env.local
+.env.production
 .env.production.local
 .env.development.local
 
+# Bridge configuration files (NEVER COMMIT)
+bridge-config.env
+bridge-config.*.env
+*-config.env
+production-config.env
+
 # Deployment wallet (NEVER COMMIT)
 deployment-wallet.json
+deploymen-wallet-solana.json
 *.wallet
 *-wallet.json
+solana-deployer-keypair.json
 
 # Dependencies
 node_modules/

@@ -61,7 +61,7 @@ const Layout = ({ children }: LayoutProps) => {
               <ul className="space-y-2">
                 <li><a href="https://latoken.com/exchange/MARS_USDT" target="_blank" rel="noopener noreferrer" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Buy MARS</a></li>
                 <li><a href="/grants" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Token Grants</a></li>
-                <li><a href="/bridge" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Bridge (Coming Soon)</a></li>
+                <li><a href="/bridge" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Bridge MARS</a></li>
                 <li><a href="/dashboard" className="text-red-400/80 hover:text-red-300 text-sm transition-colors">Dashboard</a></li>
               </ul>
             </div>

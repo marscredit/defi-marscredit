@@ -11,7 +11,7 @@ const Navigation = () => {
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/grants', label: 'Grants' },
-    { href: '/bridge', label: 'Bridge (Soon)' },
+    { href: '/bridge', label: 'Bridge' },
   ]
 
   const toggleMenu = () => {

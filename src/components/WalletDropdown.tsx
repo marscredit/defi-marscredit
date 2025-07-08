@@ -20,12 +20,18 @@ export function WalletDropdown() {
   // Auto-switch to Mars Credit Network when wallet connects
   const isCorrectNetwork = chainId === marsCreditNetwork.id
   useEffect(() => {
-    if (mounted && isConnected && !isCorrectNetwork) {
+    if (mounted && isConnected && !isCorrectNetwork && switchChain) {
       console.log(`🔗 Auto-switching from chain ${chainId} to Mars Credit Network (${marsCreditNetwork.id})`)
-      switchChain({ chainId: marsCreditNetwork.id })
-        .catch((error) => {
-          console.warn('Failed to auto-switch chain:', error.message)
-        })
+      try {
+        const result = switchChain({ chainId: marsCreditNetwork.id })
+        if (result && typeof result.catch === 'function') {
+          result.catch((error) => {
+            console.warn('Failed to auto-switch chain:', error.message)
+          })
+        }
+      } catch (error) {
+        console.warn('Failed to auto-switch chain:', error)
+      }
     }
   }, [mounted, isConnected, isCorrectNetwork, chainId, switchChain])
 
@@ -54,6 +60,11 @@ export function WalletDropdown() {
   }
 
   const handleSwitchNetwork = async () => {
+    if (!switchChain) {
+      console.error('Switch chain function not available')
+      return
+    }
+    
     try {
       await switchChain({ chainId: marsCreditNetwork.id })
     } catch (error) {

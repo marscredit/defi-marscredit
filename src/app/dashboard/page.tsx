@@ -195,9 +195,9 @@ export default function DashboardPage() {
                 
                 <Link
                   href="/bridge"
-                  className="block w-full bg-red-900/30 border border-red-600/30 text-red-400 text-center py-3 px-4 font-medium rounded-lg hover:bg-red-900/50 transition-all"
+                  className="block w-full mars-button text-center py-3 px-4 text-white font-medium rounded-lg"
                 >
-                  Bridge (Soon)
+                  Bridge MARS
                 </Link>
                 
                 <button
