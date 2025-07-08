@@ -25,7 +25,7 @@ production-config.env
 
 # Deployment wallet (NEVER COMMIT)
 deployment-wallet.json
-deploymen-wallet-solana.json
+deployment-wallet-solana.json
 *.wallet
 *-wallet.json
 solana-deployer-keypair.json

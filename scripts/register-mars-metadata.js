@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { Connection, PublicKey, Keypair, Transaction, sendAndConfirmTransaction, SystemProgram } = require('@solana/web3.js');
+const { Connection, PublicKey, Keypair, Transaction, sendAndConfirmTransaction, SystemProgram, SYSVAR_RENT_PUBKEY } = require('@solana/web3.js');
 const { createMetadataAccountV3, MPL_TOKEN_METADATA_PROGRAM_ID } = require('@metaplex-foundation/mpl-token-metadata');
 
 console.log('🏷️ Mars Token Metadata Registration');
@@ -22,7 +22,6 @@ if (!config.solanaPrivateKey) {
   process.exit(1);
 }
 
-// Use the imported constant from the library
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID);
 
 async function registerMetadata() {
@@ -67,7 +66,7 @@ async function registerMetadata() {
     const metadataData = {
       name: 'Mars Credit',
       symbol: 'MARS',
-      uri: 'https://marscredit.xyz/metadata/mars-token.json',
+      uri: 'https://github.com/marscredit/brandassets/raw/refs/heads/main/mars-token.json',
       sellerFeeBasisPoints: 0,
       creators: null,
       collection: null,
@@ -79,7 +78,7 @@ async function registerMetadata() {
     console.log('   Symbol:', metadataData.symbol);
     console.log('   URI:', metadataData.uri);
     
-    // Create metadata instruction using the simpler API
+    // Create metadata instruction using the correct API
     const createMetadataInstruction = createMetadataAccountV3(
       {
         metadata: metadataAccount,
@@ -88,12 +87,14 @@ async function registerMetadata() {
         payer: payerKeypair.publicKey,
         updateAuthority: payerKeypair.publicKey,
         systemProgram: SystemProgram.programId,
-        rent: null,
+        rent: SYSVAR_RENT_PUBKEY,
       },
       {
-        data: metadataData,
-        isMutable: true,
-        collectionDetails: null,
+        createMetadataAccountArgsV3: {
+          data: metadataData,
+          isMutable: true,
+          collectionDetails: null,
+        },
       }
     );
     
@@ -132,7 +133,7 @@ async function createMetadataJson() {
     name: 'Mars Credit',
     symbol: 'MARS',
     description: 'Mars Credit (MARS) is the native token of the Mars Credit ecosystem, bridging L1 and Solana networks for seamless DeFi experiences.',
-    image: 'https://marscredit.xyz/images/mars-token-logo.png',
+    image: 'https://raw.githubusercontent.com/marscredit/brandassets/refs/heads/main/marscredit_square_solid.png',
     attributes: [
       {
         trait_type: 'Network',
@@ -155,7 +156,7 @@ async function createMetadataJson() {
       category: 'fungible',
       files: [
         {
-          uri: 'https://marscredit.xyz/images/mars-token-logo.png',
+          uri: 'https://raw.githubusercontent.com/marscredit/brandassets/refs/heads/main/marscredit_square_solid.png',
           type: 'image/png'
         }
       ]
@@ -164,10 +165,10 @@ async function createMetadataJson() {
     animation_url: null
   };
   
-  console.log('📄 Metadata JSON structure:');
+  console.log('📄 Metadata JSON structure (matches GitHub):');
   console.log(JSON.stringify(metadataJson, null, 2));
   console.log('');
-  console.log('ℹ️ Upload this JSON to: https://marscredit.xyz/metadata/mars-token.json');
+  console.log('✅ Metadata JSON already hosted at: https://github.com/marscredit/brandassets/raw/refs/heads/main/mars-token.json');
 }
 
 // Run the registration

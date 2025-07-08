@@ -1,0 +1,35 @@
+{
+  "name": "Mars Credit",
+  "symbol": "MARS",
+  "description": "Mars Credit (MARS) is the native token of the Mars Credit ecosystem, bridging L1 and Solana networks for seamless DeFi experiences.",
+  "image": "https://raw.githubusercontent.com/marscredit/brandassets/refs/heads/main/marscredit_square_solid.png",
+  "attributes": [
+    {
+      "trait_type": "Network",
+      "value": "Multi-chain"
+    },
+    {
+      "trait_type": "Type",
+      "value": "Utility Token"
+    },
+    {
+      "trait_type": "Decimals",
+      "value": 9
+    },
+    {
+      "trait_type": "Bridge Enabled",
+      "value": "Yes"
+    }
+  ],
+  "properties": {
+    "category": "fungible",
+    "files": [
+      {
+        "uri": "https://raw.githubusercontent.com/marscredit/brandassets/refs/heads/main/marscredit_square_solid.png",
+        "type": "image/png"
+      }
+    ]
+  },
+  "external_url": "https://marscredit.xyz",
+  "animation_url": null
+}
