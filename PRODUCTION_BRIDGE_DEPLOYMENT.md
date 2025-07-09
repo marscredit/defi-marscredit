@@ -45,10 +45,10 @@ NODE_ENV=production
 PORT=3000
 HOSTNAME=0.0.0.0
 
-# Required for Bridge Services
+# Required for Bridge Services (matching Railway config)
 RELAYER_PRIVATE_KEY=your,private,key,array
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-MARS_MINT=uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b
+RPC_URL=https://api.mainnet-beta.solana.com
+MARS_MINT_ADDRESS=uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b
 BRIDGE_CONTRACT_ADDRESS=0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba
 
 # Optional
@@ -76,8 +76,8 @@ docker run -d \
   -p 3000:3000 \
   -e NODE_ENV=production \
   -e RELAYER_PRIVATE_KEY="your,private,key,array" \
-  -e SOLANA_RPC_URL="https://api.mainnet-beta.solana.com" \
-  -e MARS_MINT="uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b" \
+  -e RPC_URL="https://api.mainnet-beta.solana.com" \
+  -e MARS_MINT_ADDRESS="uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b" \
   -e BRIDGE_CONTRACT_ADDRESS="0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba" \
   -v mars-bridge-data:/app/data \
   mars-bridge-production
@@ -136,8 +136,8 @@ BRIDGE_API_URL=https://your-domain.com npm run bridge:monitor:production
 
 🌐 Environment variables:
   RELAYER_PRIVATE_KEY: ✅
-  SOLANA_RPC_URL: ✅
-  MARS_MINT: ✅
+  RPC_URL: ✅
+  MARS_MINT_ADDRESS: ✅
   BRIDGE_CONTRACT_ADDRESS: ✅
 
 📋 Queue status:

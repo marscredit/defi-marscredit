@@ -33,11 +33,11 @@ export async function GET() {
       queueStats = { error: error.message };
     }
     
-    // Check environment variables
+    // Check environment variables (matching Railway config)
     const envStatus = {
       RELAYER_PRIVATE_KEY: !!process.env.RELAYER_PRIVATE_KEY,
-      SOLANA_RPC_URL: !!process.env.SOLANA_RPC_URL,
-      MARS_MINT: !!process.env.MARS_MINT,
+      RPC_URL: !!process.env.RPC_URL,
+      MARS_MINT_ADDRESS: !!process.env.MARS_MINT_ADDRESS,
       BRIDGE_CONTRACT_ADDRESS: !!process.env.BRIDGE_CONTRACT_ADDRESS,
     };
     

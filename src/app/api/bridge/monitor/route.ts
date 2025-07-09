@@ -44,7 +44,7 @@ export async function GET() {
     let relayerBalance = null;
     try {
       const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
-      const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const SOLANA_RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
       
       if (RELAYER_PRIVATE_KEY) {
         const connection = new Connection(SOLANA_RPC_URL, 'confirmed');

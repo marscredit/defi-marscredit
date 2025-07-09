@@ -77,10 +77,10 @@ class QueueProcessor {
     console.log(`🔄 Processing transaction ${transaction.id} (attempt ${transaction.attempts + 1})`);
     
     try {
-      // Load environment variables
+      // Load environment variables (matching Railway config)
       const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
-      const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const MARS_MINT = process.env.MARS_MINT || 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b';
+      const SOLANA_RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const MARS_MINT = process.env.MARS_MINT_ADDRESS || 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b';
       
       if (!RELAYER_PRIVATE_KEY) {
         throw new Error('RELAYER_PRIVATE_KEY environment variable is required');
