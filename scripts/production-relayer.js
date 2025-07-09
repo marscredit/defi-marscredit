@@ -22,7 +22,7 @@ const config = {
   l1RpcUrl: process.env.L1_RPC_URL || 'https://rpc.marscredit.xyz',
   l1PrivateKey: process.env.RELAYER_PRIVATE_KEY,
   bridgeContractAddress: process.env.BRIDGE_CONTRACT_ADDRESS,
-  solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+  solanaRpcUrl: process.env.RPC_URL || 'https://api.mainnet-beta.solana.com',
   solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY ? JSON.parse(process.env.SOLANA_PRIVATE_KEY) : null,
   marsMintAddress: process.env.MARS_MINT_ADDRESS,
   marsTokenAccount: process.env.MARS_TOKEN_ACCOUNT,

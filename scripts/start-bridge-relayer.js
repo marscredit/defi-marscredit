@@ -27,7 +27,7 @@ const loadConfig = () => {
     bridgeContractAddress: process.env.BRIDGE_CONTRACT_ADDRESS || bridgeInfo.bridgeContract,
     
     // Solana Configuration
-    solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+    solanaRpcUrl: process.env.RPC_URL || 'https://api.devnet.solana.com',
     solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY || process.env.RELAYER_SOLANA_PRIVATE_KEY,
     marsMintAddress: process.env.MARS_MINT_ADDRESS,
     marsTokenAccount: process.env.MARS_TOKEN_ACCOUNT,
