@@ -51,6 +51,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 # CRITICAL: Copy static files to .next (not .next/static) for Tailwind CSS v4
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy scripts directory for production bridge manager
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
+# Create data directory for bridge queue
+RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+
 USER nextjs
 
 EXPOSE 3000
@@ -58,5 +64,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["node", "server.js"] 
+# Start the production bridge manager (includes Next.js + background services)
+CMD ["node", "scripts/production-bridge-manager.js"] 
