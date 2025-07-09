@@ -7,8 +7,8 @@ async function mintMarsToUser() {
   console.log('🪙 Minting 10,000 MARS to User');
   console.log('==============================');
   
-  // Load configuration from environment variables (matching Railway config)
-  const SOLANA_RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
+  // Load configuration from environment variables 
+  const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
   const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
   const MARS_MINT = process.env.MARS_MINT_ADDRESS || 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b';
   const RECIPIENT_ADDRESS = process.env.RECIPIENT_ADDRESS || '3vk55mgyoNcA2xMtf4GjqBu1SdGUPVut7mBF6SSFKJwL';

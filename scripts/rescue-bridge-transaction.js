@@ -14,9 +14,9 @@ const RESCUE_DATA = {
   l1TxHash: '0xe2b66b547dabc12d8df3fea8b05ca747beeffb88f888b79430858a35d9365264'
 };
 
-// Configuration from environment variables (matching Railway config)
+// Configuration from environment variables
 const config = {
-  solanaRpcUrl: process.env.RPC_URL || 'https://api.mainnet-beta.solana.com',
+  solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   marsMintAddress: process.env.MARS_MINT_ADDRESS || 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b',
   solanaPrivateKey: process.env.RELAYER_PRIVATE_KEY
 };

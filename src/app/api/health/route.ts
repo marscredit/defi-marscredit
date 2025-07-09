@@ -33,12 +33,13 @@ export async function GET() {
       queueStats = { error: error.message };
     }
     
-    // Check environment variables (matching Railway config)
+    // Check environment variables
     const envStatus = {
       RELAYER_PRIVATE_KEY: !!process.env.RELAYER_PRIVATE_KEY,
-      RPC_URL: !!process.env.RPC_URL,
+      SOLANA_RPC_URL: !!process.env.SOLANA_RPC_URL,
       MARS_MINT_ADDRESS: !!process.env.MARS_MINT_ADDRESS,
       BRIDGE_CONTRACT_ADDRESS: !!process.env.BRIDGE_CONTRACT_ADDRESS,
+      RPC_URL: !!process.env.RPC_URL, // Mars Credit Network RPC
     };
     
     const responseTime = Date.now() - startTime;
