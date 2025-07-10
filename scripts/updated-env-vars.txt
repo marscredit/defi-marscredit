@@ -1,0 +1,14 @@
+# Add these to your .env file to fix the bridge relayer:
+
+SOLANA_BRIDGE_PROGRAM_ID=MarsB1dg3K8GzRTaY3PdJwEYy2HjnxCEwUXXUyZvvQUz
+SOLANA_BRIDGE_STATE_ADDRESS=8acK4NjRobVgZbuQVJbafvQ4A34FbD42FsFs1LCE2det
+
+# These should already exist in your .env file:
+# RELAYER_PRIVATE_KEY=your_existing_value
+# BRIDGE_CONTRACT_ADDRESS=your_existing_value
+# SOLANA_PRIVATE_KEY=your_existing_value
+# MARS_MINT_ADDRESS=your_existing_value
+
+# After adding these, restart your relayer with:
+# cd scripts
+# node simple-relayer.js 

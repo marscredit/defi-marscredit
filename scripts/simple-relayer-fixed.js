@@ -6,12 +6,11 @@ require('dotenv').config();
 const { ethers } = require('ethers');
 const { Connection, PublicKey, Keypair } = require('@solana/web3.js');
 const { getMint, getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction, createMintToInstruction, TOKEN_PROGRAM_ID } = require('@solana/spl-token');
-const { Program, AnchorProvider, Wallet, BN } = require('@coral-xyz/anchor');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🌉 Mars Bridge Relayer (Working Version)');
-console.log('=======================================');
+console.log('🌉 Mars Bridge Relayer (Fixed Version)');
+console.log('======================================');
 console.log('📋 Loading environment variables from .env file...');
 
 // Configuration from environment variables
@@ -21,13 +20,12 @@ const config = {
   bridgeContractAddress: process.env.BRIDGE_CONTRACT_ADDRESS,
   solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY ? JSON.parse(process.env.SOLANA_PRIVATE_KEY) : null,
-  marsMintAddress: process.env.MARS_MINT_ADDRESS,
-  bridgeProgramId: process.env.SOLANA_BRIDGE_PROGRAM_ID,
-  bridgeStateAddress: process.env.SOLANA_BRIDGE_STATE_ADDRESS
+  marsMintAddress: process.env.MARS_MINT_ADDRESS
 };
 
-// State file to track processed transactions
+// State files to track processed transactions
 const stateFile = path.join(__dirname, 'relayer-state.json');
+const l1TxHashFile = path.join(__dirname, 'processed-l1-hashes.json');
 
 // Debug: Show what environment variables are loaded (safely)
 console.log('🔍 Environment Variables Check:');
@@ -42,9 +40,7 @@ const requiredEnvVars = [
   'RELAYER_PRIVATE_KEY',
   'BRIDGE_CONTRACT_ADDRESS',
   'SOLANA_PRIVATE_KEY', 
-  'MARS_MINT_ADDRESS',
-  'SOLANA_BRIDGE_PROGRAM_ID',
-  'SOLANA_BRIDGE_STATE_ADDRESS'
+  'MARS_MINT_ADDRESS'
 ];
 
 for (const envVar of requiredEnvVars) {
@@ -59,49 +55,6 @@ for (const envVar of requiredEnvVars) {
 const l1Wallet = new ethers.Wallet(config.l1PrivateKey, new ethers.JsonRpcProvider(config.l1RpcUrl));
 const solanaConnection = new Connection(config.solanaRpcUrl);
 const solanaWallet = Keypair.fromSecretKey(Uint8Array.from(config.solanaPrivateKey));
-
-// Initialize Anchor provider and program
-const anchorWallet = new Wallet(solanaWallet);
-const anchorProvider = new AnchorProvider(solanaConnection, anchorWallet, {
-  commitment: 'confirmed',
-  preflightCommitment: 'confirmed'
-});
-
-// Bridge program IDL (simplified for mint_mars instruction)
-const bridgeProgramIdl = {
-  version: "0.1.0",
-  name: "mars_bridge",
-  instructions: [
-    {
-      name: "mintMars",
-      accounts: [
-        { name: "bridgeState", isMut: true, isSigner: false },
-        { name: "marsMint", isMut: true, isSigner: false },
-        { name: "userTokenAccount", isMut: true, isSigner: false },
-        { name: "authority", isMut: false, isSigner: true },
-        { name: "tokenProgram", isMut: false, isSigner: false }
-      ],
-      args: [
-        { name: "amount", type: "u64" },
-        { name: "l1TxId", type: { array: ["u8", 32] } }
-      ]
-    }
-  ]
-};
-
-// Create bridge program with proper PublicKey
-console.log('🔧 Creating bridge program...');
-console.log('   Program ID value:', `"${config.bridgeProgramId}"`);
-console.log('   Program ID length:', config.bridgeProgramId?.length);
-
-if (!config.bridgeProgramId) {
-  console.error('❌ SOLANA_BRIDGE_PROGRAM_ID is not set!');
-  process.exit(1);
-}
-
-const bridgeProgramPubkey = new PublicKey(config.bridgeProgramId.trim());
-const bridgeProgram = new Program(bridgeProgramIdl, bridgeProgramPubkey, anchorProvider);
-console.log('✅ Bridge program created successfully');
 
 // Bridge contract ABI
 const bridgeABI = [
@@ -131,6 +84,27 @@ function saveState(state) {
     fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
   } catch (error) {
     console.error('❌ Could not save state:', error.message);
+  }
+}
+
+// Load/save L1 transaction hashes (duplicate prevention)
+function loadProcessedL1Hashes() {
+  try {
+    if (fs.existsSync(l1TxHashFile)) {
+      const data = fs.readFileSync(l1TxHashFile, 'utf8');
+      return new Set(JSON.parse(data));
+    }
+  } catch (error) {
+    console.log('⚠️ Could not load L1 hash file, starting fresh');
+  }
+  return new Set();
+}
+
+function saveProcessedL1Hashes(hashSet) {
+  try {
+    fs.writeFileSync(l1TxHashFile, JSON.stringify([...hashSet], null, 2));
+  } catch (error) {
+    console.error('❌ Could not save L1 hash file:', error.message);
   }
 }
 
@@ -167,10 +141,16 @@ async function mintTokensOnSolana(recipient, amount, bridgeId, l1TxHash) {
   console.log(`🎯 Minting ${amount} MARS to ${recipient} for Bridge ID ${bridgeId}`);
   console.log(`   L1 Transaction Hash: ${l1TxHash}`);
   
+  // Check for L1 transaction hash duplicates
+  const processedHashes = loadProcessedL1Hashes();
+  if (processedHashes.has(l1TxHash)) {
+    console.log(`⚠️  L1 Transaction ${l1TxHash} already processed, skipping mint`);
+    return 'already_processed';
+  }
+  
   try {
     const recipientPubkey = new PublicKey(recipient);
     const mintPubkey = new PublicKey(config.marsMintAddress);
-    const bridgeStatePubkey = new PublicKey(config.bridgeStateAddress);
     
     // Get associated token account
     const associatedTokenAccount = getAssociatedTokenAddressSync(
@@ -198,47 +178,37 @@ async function mintTokensOnSolana(recipient, amount, bridgeId, l1TxHash) {
       console.log('✅ Token account created:', createAccountSignature);
     }
     
-    // Convert L1 transaction hash to bytes32 array for Solana
-    const l1TxHashBytes = ethers.getBytes(l1TxHash);
-    if (l1TxHashBytes.length !== 32) {
-      throw new Error(`Invalid L1 transaction hash length: ${l1TxHashBytes.length}, expected 32`);
-    }
-    
     // Convert amount to smallest unit (MARS has 9 decimals)
-    const amountInSmallestUnit = new BN(Math.floor(parseFloat(amount) * 1000000000));
+    const amountInSmallestUnit = Math.floor(parseFloat(amount) * 1000000000);
     
-    console.log(`🔗 Calling bridge program mint_mars instruction...`);
-    console.log(`   Amount: ${amountInSmallestUnit.toString()}`);
-    console.log(`   L1 TX ID: ${Array.from(l1TxHashBytes)}`);
+    // Create mint transaction
+    const mintTx = new (require('@solana/web3.js')).Transaction();
+    mintTx.add(
+      createMintToInstruction(
+        mintPubkey,
+        associatedTokenAccount,
+        solanaWallet.publicKey,
+        amountInSmallestUnit
+      )
+    );
     
-    // Call bridge program's mint_mars instruction
-    const signature = await bridgeProgram.methods
-      .mintMars(amountInSmallestUnit, Array.from(l1TxHashBytes))
-      .accounts({
-        bridgeState: bridgeStatePubkey,
-        marsMint: mintPubkey,
-        userTokenAccount: associatedTokenAccount,
-        authority: solanaWallet.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID
-      })
-      .rpc();
+    // Send transaction
+    const signature = await solanaConnection.sendTransaction(mintTx, [solanaWallet]);
+    await solanaConnection.confirmTransaction(signature, 'confirmed');
+    
+    // Save L1 transaction hash to prevent duplicates
+    processedHashes.add(l1TxHash);
+    saveProcessedL1Hashes(processedHashes);
     
     console.log(`✅ Minted ${amount} MARS to ${recipient}`);
-    console.log(`   Transaction: ${signature}`);
+    console.log(`   Solana Transaction: ${signature}`);
+    console.log(`   L1 Hash Recorded: ${l1TxHash}`);
     console.log(`   Bridge ID: ${bridgeId} completed`);
     
     return signature;
     
   } catch (error) {
     console.error(`❌ Failed to mint tokens for Bridge ID ${bridgeId}:`, error.message);
-    
-    // Check if this is a duplicate transaction error
-    if (error.message.includes('TransactionAlreadyProcessed') || 
-        error.message.includes('already processed')) {
-      console.log(`⚠️  Bridge ID ${bridgeId} was already processed on-chain, this is expected behavior`);
-      return 'already_processed';
-    }
-    
     throw error;
   }
 }
@@ -292,7 +262,7 @@ async function processHistoricalTransactions() {
           saveState(state);
           console.log(`✅ Successfully processed Bridge ID ${bridgeId}`);
         } else {
-          console.log(`⚠️  Bridge ID ${bridgeId} was already processed on-chain, updating local state`);
+          console.log(`⚠️  Bridge ID ${bridgeId} was already processed via L1 hash, updating local state`);
           state.processedBridgeIds.push(bridgeId);
           saveState(state);
         }
@@ -318,12 +288,6 @@ async function monitorL1Events() {
       bridgeId: bridgeId.toString(),
       txHash: event.log?.transactionHash || event.transactionHash
     });
-    
-    // Debug: Log the full event object to see what's available
-    console.log('🔍 Event object properties:', Object.keys(event));
-    console.log('🔍 Event log properties:', event.log ? Object.keys(event.log) : 'no log property');
-    console.log('🔍 Transaction hash from event:', event.transactionHash);
-    console.log('🔍 Transaction hash from event.log:', event.log?.transactionHash);
     
     // Try different ways to get the transaction hash
     const txHash = event.log?.transactionHash || event.transactionHash || event.log?.hash;
@@ -421,7 +385,7 @@ async function pollForConfirmations(event, user, amount, solanaRecipient, bridge
               saveState(state);
               console.log(`🎉 Successfully processed Bridge ID ${bridgeId.toString()}`);
             } else {
-              console.log(`⚠️  Bridge ID ${bridgeId.toString()} was already processed on-chain, updating local state`);
+              console.log(`⚠️  Bridge ID ${bridgeId.toString()} was already processed via L1 hash, updating local state`);
               state.processedBridgeIds.push(bridgeId.toString());
               saveState(state);
             }
@@ -476,6 +440,11 @@ async function main() {
   
   console.log('✅ Relayer started successfully!');
   console.log('   Press Ctrl+C to stop');
+  console.log('');
+  console.log('🔒 Duplicate Prevention: Using L1 transaction hash tracking');
+  console.log('📁 State files:');
+  console.log('   Bridge IDs:', stateFile);
+  console.log('   L1 Hashes:', l1TxHashFile);
   
   // Keep the process running
   process.on('SIGINT', () => {
