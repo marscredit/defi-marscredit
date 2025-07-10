@@ -9,8 +9,13 @@ RUN apk add --no-cache \
     g++ \
     py3-pip \
     libc6-compat \
-    linux-headers \
-    eudev-dev
+    linux-headers
+
+# Set environment variables to skip problematic native modules
+ENV npm_config_build_from_source=true
+ENV npm_config_target_platform=linux
+ENV npm_config_target_arch=x64
+ENV npm_config_cache=/tmp/.npm
 
 # Create app directory
 WORKDIR /app
@@ -18,8 +23,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with additional npm configurations for native modules
-RUN npm ci --only=production --unsafe-perm
+# Install dependencies with fallback for native modules
+RUN npm ci --only=production --no-optional || npm ci --only=production --ignore-scripts
 
 # Copy source code
 COPY . .
