@@ -1,68 +1,38 @@
-# Use Debian-based Node image instead of Alpine to fix lightningcss compatibility
-FROM node:18-slim AS base
+FROM node:18-alpine
 
-# Install dependencies only when needed
-FROM base AS deps
-# Install system dependencies for building native modules
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+# Install dumb-init and curl for proper signal handling and health checks
+RUN apk add --no-cache dumb-init curl
 
+# Create app directory
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-# Install ALL dependencies (including devDependencies) needed for build
-RUN npm ci --legacy-peer-deps --include=dev || npm install --legacy-peer-deps
+# Copy package files
+COPY package*.json ./
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
 COPY . .
 
-# Disable telemetry during the build
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NEXT_PRIVATE_STANDALONE=true
-
-# Build the application
+# Build the Next.js application
 RUN npm run build
 
-# Remove devDependencies to reduce final image size
-RUN npm prune --omit=dev
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
 
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN groupadd --system --gid 1001 nodejs
-RUN useradd --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-# CRITICAL: Copy static files to .next (not .next/static) for Tailwind CSS v4
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy scripts directory for production bridge manager
-COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-
-# Create data directory for bridge queue
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
-
+# Change ownership
+RUN chown -R nextjs:nodejs /app
 USER nextjs
 
+# Expose port
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Start the production bridge manager (includes Next.js + background services)
-CMD ["node", "scripts/production-bridge-manager.js"] 
+# Use dumb-init to handle signals properly and run production manager
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "scripts/production-manager.js"] 

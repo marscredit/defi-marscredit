@@ -23,6 +23,16 @@ bridge-config.*.env
 *-config.env
 production-config.env
 
+# Security migration file (NEVER COMMIT - contains compromised keys)
+security-migration.json
+security-migration-*.json
+migration-*.json
+
+# Migration tracking scripts (contain compromised keys for reference)
+scripts/fix-production-bridge.js
+scripts/diagnose-production-bridge.js
+scripts/bridge-issue-summary.js
+
 # Deployment wallet (NEVER COMMIT)
 deployment-wallet.json
 deployment-wallet-solana.json
@@ -81,3 +91,10 @@ Thumbs.db
 
 # Truffle
 build/contracts/
+
+# Security scan reports (NEVER COMMIT)
+security-scan-report.json
+security-scan-*.jsonsecure-keys.json
+
+RAILWAY_ENVIRONMENT_VARIABLES.md
+secure-keys.json

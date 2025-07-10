@@ -23,8 +23,8 @@ interface BridgeStats {
   }
   solana: {
     totalSupply: string
-    mintAuthority: string
-    isInitialized: boolean
+    decimals: number
+    mintAuthority: string | null
   }
 }
 
@@ -37,6 +37,10 @@ export function MarsBridge() {
   const [txHash, setTxHash] = useState('')
   const [stats, setStats] = useState<BridgeStats | null>(null)
   const [error, setError] = useState('')
+  const [bridgeConfig, setBridgeConfig] = useState<{
+    bridgeContract: string
+    marsMint: string
+  } | null>(null)
 
   // Wallet connections
   const { address: l1Address, isConnected: l1Connected } = useAccount()
@@ -47,10 +51,40 @@ export function MarsBridge() {
   const solanaConnected = walletContext?.connected || false
   const signTransaction = walletContext?.signTransaction
 
-  // Constants - Using our actual deployed addresses
-  const BRIDGE_CONTRACT_ADDRESS = '0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba'
-  const MARS_MINT_ADDRESS = 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b' // New MARS mint (9 decimals, supports billions of MARS)
-  const SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com'
+  // Load bridge configuration from environment variables
+  useEffect(() => {
+    const loadBridgeConfig = async () => {
+      try {
+        // Use Next.js environment variables (NEXT_PUBLIC_ prefix makes them available in browser)
+        const bridgeContract = process.env.NEXT_PUBLIC_BRIDGE_CONTRACT_ADDRESS || '0x483c7120e93651a0f2b0085Fa50FBB6217aA87ec';
+        const marsMint = process.env.NEXT_PUBLIC_SOLANA_MINT_ADDRESS || '5Crb9yCXHGiib5nn6tZAA5qChD8F1tARY9GkSSbgGpAs';
+        
+        setBridgeConfig({
+          bridgeContract,
+          marsMint
+        });
+        
+        console.log('✅ Bridge config loaded from environment variables');
+        console.log('   Bridge Contract:', bridgeContract);
+        console.log('   Solana Mint:', marsMint);
+        
+      } catch (error) {
+        console.warn('Failed to load bridge config, using fallback:', error);
+        // Fallback to new secure contract
+        setBridgeConfig({
+          bridgeContract: '0x483c7120e93651a0f2b0085Fa50FBB6217aA87ec',
+          marsMint: '5Crb9yCXHGiib5nn6tZAA5qChD8F1tARY9GkSSbgGpAs'
+        });
+      }
+    };
+
+    loadBridgeConfig();
+  }, []);
+
+  // Constants - Now using environment variables
+  const BRIDGE_CONTRACT_ADDRESS = bridgeConfig?.bridgeContract || '0x483c7120e93651a0f2b0085Fa50FBB6217aA87ec';
+  const MARS_MINT_ADDRESS = bridgeConfig?.marsMint || '5Crb9yCXHGiib5nn6tZAA5qChD8F1tARY9GkSSbgGpAs';
+  const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
   // Note: MARS is the native currency of Mars Credit Network (like ETH), not an ERC-20 token
 
   // Bridge contract ABI - for native MARS coin bridging
@@ -151,6 +185,11 @@ export function MarsBridge() {
       return
     }
 
+    if (!bridgeConfig) {
+      setError('Bridge configuration not loaded yet, please wait...')
+      return
+    }
+
     // Validate recipient address format
     if (direction.to === 'Solana') {
       try {
@@ -178,6 +217,8 @@ export function MarsBridge() {
         }
 
         const bridgeAmount = parseEther(amount)
+        
+        console.log('🌉 Bridging to new secure contract:', BRIDGE_CONTRACT_ADDRESS)
         
         // Call bridge contract - send native MARS coins as value
         writeContract({
@@ -254,51 +295,51 @@ export function MarsBridge() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Bridge Direction Selector */}
-      <div className="mars-card p-8 mb-8 rounded-xl">
-        <div className="grid grid-cols-3 gap-4 items-center">
-          {/* From Network */}
-          <div className="text-center">
-            <div className="mars-glow-text text-xl font-bold mb-2">
-              {direction.from === 'L1' ? 'L1' : 'Solana'}
+      {/* Bridge Direction Toggle */}
+      <div className="mb-8">
+        <div className="mars-card p-6 rounded-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-red-300">Mars Credit Network</h3>
+              <p className="text-red-400/60 text-sm">Native MARS</p>
             </div>
-            <div className="text-red-400/80 text-sm">
-              {direction.from === 'L1' ? 'Mars Credit Network' : 'Solana Mainnet'}
-            </div>
-            <div className="mt-2">
-              <span className="text-red-300 text-xs">Mainnet</span>
-            </div>
-          </div>
-
-          {/* Direction Arrow */}
-          <div className="text-center">
+            
             <button
               onClick={handleDirectionChange}
-              className="mars-button p-3 rounded-full hover:scale-110 transition-transform"
-              title="Switch direction"
+              className="mars-button p-3 rounded-xl hover:bg-red-700 transition-all"
+              title="Switch Direction"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
             </button>
+            
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-red-300">Solana</h3>
+              <p className="text-red-400/60 text-sm">Wrapped MARS</p>
+            </div>
           </div>
-
-          {/* To Network */}
+          
           <div className="text-center">
-            <div className="mars-glow-text text-xl font-bold mb-2">
-              {direction.to === 'L1' ? 'L1' : 'Solana'}
-            </div>
-            <div className="text-red-400/80 text-sm">
-              {direction.to === 'L1' ? 'Mars Credit Network' : 'Solana Mainnet'}
-            </div>
-            <div className="mt-2">
-              <span className="text-red-300 text-xs">Mainnet</span>
-            </div>
+            <span className="text-red-400 font-medium">
+              {direction.from} → {direction.to}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Bridge Form */}
+      {/* Bridge Contract Info */}
+      {bridgeConfig && (
+        <div className="mb-6 p-4 bg-green-900/20 border border-green-600/30 rounded-xl">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <span className="text-green-400 text-sm font-medium">New Secure Bridge Active</span>
+          </div>
+          <div className="text-green-300/80 text-xs font-mono">{bridgeConfig.bridgeContract}</div>
+        </div>
+      )}
+
+      {/* Main Bridge Interface */}
       <div className="mars-card p-8 rounded-xl">
         <h2 className="text-2xl font-bold mb-6 mars-glow-text">Bridge MARS</h2>
         
@@ -390,10 +431,11 @@ export function MarsBridge() {
         {/* Bridge Button */}
         <button
           onClick={handleBridge}
-          disabled={isProcessing || isPending || isConfirming || !amount || !recipientAddress || !walletReq.connected}
+          disabled={isProcessing || isPending || isConfirming || !amount || !recipientAddress || !walletReq.connected || !bridgeConfig}
           className="w-full mars-button py-4 text-white font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isProcessing || isPending || isConfirming 
+          {!bridgeConfig ? 'Loading bridge configuration...' :
+           isProcessing || isPending || isConfirming 
             ? 'Processing...' 
             : `Bridge ${direction.from} → ${direction.to}`
           }
@@ -403,7 +445,7 @@ export function MarsBridge() {
         <div className="mt-6 p-4 bg-black/30 rounded-xl border border-red-600/20">
           <h3 className="text-red-400 font-medium mb-2">How it works:</h3>
           <div className="text-sm text-red-400/80 space-y-1">
-                         {direction.from === 'L1' ? (
+            {direction.from === 'L1' ? (
                <>
                  <p>1. Connect your L1 wallet (MetaMask)</p>
                  <p>2. Enter Solana recipient address</p>

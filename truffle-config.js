@@ -46,7 +46,7 @@ require('dotenv').config();
 module.exports = {
   // Directory configurations
   contracts_directory: './contracts/',
-  migrations_directory: './.cursor/engineering/',
+  migrations_directory: './migrations/',
   /**
    * Networks define how you connect to your ethereum client and let you set the
    * defaults web3 uses to send transactions. If you don't specify one truffle
@@ -118,7 +118,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.20",    // Updated for OpenZeppelin compatibility
+      version: "0.8.20",    // Updated to match OpenZeppelin requirements
       settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
           enabled: false     // Disable optimizer for debugging

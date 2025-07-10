@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
-import { Connection, PublicKey, Keypair, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
-import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, createMintToInstruction, createBurnInstruction, getMint, getAccount } from '@solana/spl-token'
+import { Connection, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
+import { createMintToInstruction, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, getAccount } from '@solana/spl-token'
+import * as bs58 from 'bs58'
 
 export interface BridgeTransaction {
   id: string
@@ -12,23 +13,38 @@ export interface BridgeTransaction {
   processed: boolean
 }
 
-export interface RelayerConfig {
+interface BridgeConfig {
   // L1 Configuration
   l1RpcUrl: string
-  l1PrivateKey: string  
+  l1PrivateKey: string
   bridgeContractAddress: string
   
   // Solana Configuration
   solanaRpcUrl: string
   solanaPrivateKey: string
   marsMintAddress: string
-  marsTokenAccount: string
   
-  // Relayer Settings
-  pollIntervalMs: number
-  maxRetries: number
-  gasLimitL1: number
-  priorityFee: number
+  // Bridge Settings
+  confirmations: number
+  batchSize: number
+  pollInterval: number
+}
+
+interface BridgeEvent {
+  user: string
+  amount: string
+  solanaRecipient: string
+  bridgeId: string
+  txHash: string
+  blockNumber: number
+}
+
+interface BurnEvent {
+  user: string
+  amount: string
+  l1Recipient: string
+  txHash: string
+  blockNumber: number
 }
 
 export class MarsBridgeRelayer {
@@ -37,15 +53,15 @@ export class MarsBridgeRelayer {
   private l1BridgeContract: ethers.Contract
   
   private solanaConnection: Connection
-  private solanaWallet: Keypair
+  private solanaKeypair: any
   private marsMint: PublicKey
   private marsTokenAccount: PublicKey
   
   private isRunning: boolean = false
-  private config: RelayerConfig
+  private config: BridgeConfig
   private processedTxs: Set<string> = new Set()
   
-  constructor(config: RelayerConfig) {
+  constructor(config: BridgeConfig) {
     this.config = config
     this.initializeL1()
     this.initializeSolana()
@@ -71,7 +87,7 @@ export class MarsBridgeRelayer {
       this.l1Wallet
     )
     
-    console.log('✅ L1 Bridge initialized:', this.config.bridgeContractAddress)
+    console.log('✅ L1 Bridge initialized with NEW secure contract:', this.config.bridgeContractAddress)
   }
   
   private initializeSolana(): void {
@@ -80,14 +96,15 @@ export class MarsBridgeRelayer {
     
     // Initialize wallet from private key
     const secretKey = Uint8Array.from(JSON.parse(this.config.solanaPrivateKey))
-    this.solanaWallet = Keypair.fromSecretKey(secretKey)
+    this.solanaKeypair = bs58.decode(this.config.solanaPrivateKey) // Assuming solanaPrivateKey is base58 encoded
+    this.solanaKeypair = bs58.decode(this.config.solanaPrivateKey) // Assuming solanaPrivateKey is base58 encoded
     
     this.marsMint = new PublicKey(this.config.marsMintAddress)
     this.marsTokenAccount = new PublicKey(this.config.marsTokenAccount)
     
     console.log('✅ Solana Bridge initialized')
     console.log('   Mars Mint:', this.config.marsMintAddress)
-    console.log('   Relayer Address:', this.solanaWallet.publicKey.toString())
+    console.log('   Relayer Address:', this.solanaKeypair.publicKey.toString())
   }
   
   public async start(): Promise<void> {
@@ -152,7 +169,7 @@ export class MarsBridgeRelayer {
       } catch (error) {
         console.error('❌ Error checking Solana burn events:', error)
       }
-    }, this.config.pollIntervalMs)
+    }, this.config.pollInterval)
     
     console.log('✅ Solana monitoring active')
   }
@@ -177,7 +194,7 @@ export class MarsBridgeRelayer {
       // Create token account if it doesn't exist
       if (!accountInfo) {
         const createATAInstruction = createAssociatedTokenAccountInstruction(
-          this.solanaWallet.publicKey, // payer
+          this.solanaKeypair.publicKey, // payer
           userTokenAccount, // associated token account
           userPubkey, // owner
           this.marsMint // mint
@@ -189,7 +206,7 @@ export class MarsBridgeRelayer {
       const mintInstruction = createMintToInstruction(
         this.marsMint, // mint
         userTokenAccount, // destination
-        this.solanaWallet.publicKey, // authority
+        this.solanaKeypair.publicKey, // authority
         BigInt(lockData.amount.toString()) // amount
       )
       
@@ -199,7 +216,7 @@ export class MarsBridgeRelayer {
       const signature = await sendAndConfirmTransaction(
         this.solanaConnection,
         transaction,
-        [this.solanaWallet],
+        [this.solanaKeypair],
         { commitment: 'confirmed' }
       )
       
@@ -218,7 +235,7 @@ export class MarsBridgeRelayer {
     
     // Get recent signatures for our wallet
     const signatures = await this.solanaConnection.getSignaturesForAddress(
-      this.solanaWallet.publicKey,
+      this.solanaKeypair.publicKey,
       { limit: 10 }
     )
     
@@ -285,7 +302,7 @@ export class MarsBridgeRelayer {
         burnData.amount,
         ethers.id(solanaTxId),
         {
-          gasLimit: this.config.gasLimitL1,
+          gasLimit: 21000, // Default gas limit for unlock
           gasPrice: ethers.parseUnits('0.1', 'gwei') // Mars Credit Network gas price
         }
       )
@@ -305,7 +322,7 @@ export class MarsBridgeRelayer {
       const l1Stats = await this.l1BridgeContract.getBridgeStats()
       
       // Get Solana mint info
-      const mintInfo = await getMint(this.solanaConnection, this.marsMint)
+      const mintInfo = await getAccount(this.solanaConnection, this.marsMint)
       
       return {
         l1: {

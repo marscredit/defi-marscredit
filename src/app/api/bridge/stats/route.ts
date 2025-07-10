@@ -3,15 +3,15 @@ import { ethers } from 'ethers'
 import { Connection, PublicKey } from '@solana/web3.js'
 import { getMint } from '@solana/spl-token'
 
-// Bridge configuration
+// Bridge configuration - Updated to use environment variables
 const BRIDGE_CONFIG = {
   l1: {
-    contractAddress: '0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba',
-    rpcUrl: 'https://rpc.marscredit.xyz',
+    contractAddress: process.env.NEXT_PUBLIC_BRIDGE_CONTRACT_ADDRESS || '0x483c7120e93651a0f2b0085Fa50FBB6217aA87ec',
+    rpcUrl: process.env.NEXT_PUBLIC_MARS_RPC_URL || 'https://rpc.marscredit.xyz:443',
   },
   solana: {
-    mintAddress: 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b', // New MARS mint (9 decimals, supports billions of MARS)
-    rpcUrl: 'https://api.mainnet-beta.solana.com',
+    mintAddress: process.env.NEXT_PUBLIC_SOLANA_MINT_ADDRESS || '5Crb9yCXHGiib5nn6tZAA5qChD8F1tARY9GkSSbgGpAs',
+    rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   }
 }
 
