@@ -1,7 +1,16 @@
 FROM node:18-alpine
 
-# Install dumb-init and curl for proper signal handling and health checks
-RUN apk add --no-cache dumb-init curl
+# Install build dependencies and Python for node-gyp
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    python3 \
+    make \
+    g++ \
+    py3-pip \
+    libc6-compat \
+    libudev-dev \
+    linux-headers
 
 # Create app directory
 WORKDIR /app
@@ -9,8 +18,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies with additional npm configurations for native modules
+RUN npm ci --only=production --unsafe-perm
 
 # Copy source code
 COPY . .
