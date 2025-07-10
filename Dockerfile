@@ -9,7 +9,6 @@ RUN apk add --no-cache \
     g++ \
     py3-pip \
     libc6-compat \
-    libudev-dev \
     linux-headers
 
 # Create app directory
