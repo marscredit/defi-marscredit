@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     g++ \
     py3-pip \
     libc6-compat \
-    linux-headers
+    linux-headers \
+    eudev-dev
 
 # Create app directory
 WORKDIR /app
@@ -34,12 +35,9 @@ RUN adduser -S nextjs -u 1001
 RUN chown -R nextjs:nodejs /app
 USER nextjs
 
-# Expose port
-EXPOSE 3000
-
-# Health check
+# Health check using Railway's PORT environment variable
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD curl -f http://localhost:${PORT:-3000}/api/health || exit 1
 
 # Use dumb-init to handle signals properly and run production manager
 ENTRYPOINT ["dumb-init", "--"]
