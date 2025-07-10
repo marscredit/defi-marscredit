@@ -9,7 +9,12 @@ const NETWORK_CONFIG = {
 // Contract addresses
 const grantAddress = '0xFde59B4b965b6B0A9817F050261244Fe5f99B911'; // Enhanced Test Genesis Grant
 const backendWallet = '0x06F0f6935dfe7Aef5947a12cCDa532346a815ccD'; // Backend wallet from API
-const deployerPrivateKey = '0x702f0b3c12108a7341cc1c94ac83a4a4732df139fb75880d13568883244082ea';
+const deployerPrivateKey = process.env.DEPLOYER_PRIVATE_KEY;
+
+if (!deployerPrivateKey) {
+  console.error('❌ DEPLOYER_PRIVATE_KEY environment variable is required');
+  process.exit(1);
+}
 
 // Enhanced Gasless Grant ABI
 const GRANT_ABI = [

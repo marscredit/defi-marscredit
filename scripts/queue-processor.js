@@ -78,19 +78,28 @@ class QueueProcessor {
     
     try {
       // Load environment variables
-      const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
+      const SOLANA_PRIVATE_KEY = process.env.SOLANA_PRIVATE_KEY;
       const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
       const MARS_MINT = process.env.MARS_MINT_ADDRESS || 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b';
       
-      if (!RELAYER_PRIVATE_KEY) {
-        throw new Error('RELAYER_PRIVATE_KEY environment variable is required');
+      if (!SOLANA_PRIVATE_KEY) {
+        throw new Error('SOLANA_PRIVATE_KEY environment variable is required');
+      }
+      
+      // Parse Solana private key
+      let parsedPrivateKey;
+      try {
+        parsedPrivateKey = JSON.parse(SOLANA_PRIVATE_KEY);
+        if (!Array.isArray(parsedPrivateKey) || parsedPrivateKey.length !== 64) {
+          throw new Error('SOLANA_PRIVATE_KEY must be a 64-element array');
+        }
+      } catch (error) {
+        throw new Error(`Invalid SOLANA_PRIVATE_KEY format: ${error.message}`);
       }
       
       // Initialize Solana connection
       const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
-      const relayerKeypair = Keypair.fromSecretKey(
-        Buffer.from(RELAYER_PRIVATE_KEY.split(',').map(num => parseInt(num)))
-      );
+      const relayerKeypair = Keypair.fromSecretKey(Uint8Array.from(parsedPrivateKey));
       
       const marsMint = new PublicKey(MARS_MINT);
       const recipientPubkey = new PublicKey(transaction.recipient);

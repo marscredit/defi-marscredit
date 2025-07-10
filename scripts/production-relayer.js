@@ -23,11 +23,43 @@ const config = {
   l1PrivateKey: process.env.RELAYER_PRIVATE_KEY,
   bridgeContractAddress: process.env.BRIDGE_CONTRACT_ADDRESS,
   solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
-  solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY ? JSON.parse(process.env.SOLANA_PRIVATE_KEY) : null,
+  solanaPrivateKey: parseSolanaPrivateKey(),
   marsMintAddress: process.env.MARS_MINT_ADDRESS,
   marsTokenAccount: process.env.MARS_TOKEN_ACCOUNT,
   environment: process.env.NODE_ENV || 'production'
 };
+
+function parseSolanaPrivateKey() {
+  const envKey = process.env.SOLANA_PRIVATE_KEY;
+  
+  if (!envKey) {
+    console.error('❌ SOLANA_PRIVATE_KEY environment variable is not set');
+    return null;
+  }
+  
+  try {
+    // Try parsing as JSON array
+    const parsed = JSON.parse(envKey);
+    
+    if (!Array.isArray(parsed)) {
+      console.error('❌ SOLANA_PRIVATE_KEY must be a JSON array');
+      return null;
+    }
+    
+    if (parsed.length !== 64) {
+      console.error('❌ SOLANA_PRIVATE_KEY array must have exactly 64 elements');
+      return null;
+    }
+    
+    console.log('✅ SOLANA_PRIVATE_KEY parsed successfully');
+    return parsed;
+  } catch (error) {
+    console.error('❌ Failed to parse SOLANA_PRIVATE_KEY as JSON:', error.message);
+    console.error('   Expected format: [155,171,247,212,...]');
+    console.error('   Received:', envKey?.substring(0, 100) + '...');
+    return null;
+  }
+}
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -49,7 +81,22 @@ for (const envVar of requiredEnvVars) {
 const l1Provider = new ethers.JsonRpcProvider(config.l1RpcUrl);
 const l1Wallet = new ethers.Wallet(config.l1PrivateKey, l1Provider);
 const solanaConnection = new Connection(config.solanaRpcUrl, 'confirmed');
-const solanaWallet = Keypair.fromSecretKey(Uint8Array.from(config.solanaPrivateKey));
+
+// Validate and create Solana wallet
+let solanaWallet;
+if (!config.solanaPrivateKey) {
+  console.error('❌ Cannot create Solana wallet: SOLANA_PRIVATE_KEY is not properly configured');
+  process.exit(1);
+}
+
+try {
+  solanaWallet = Keypair.fromSecretKey(Uint8Array.from(config.solanaPrivateKey));
+  console.log('✅ Solana wallet created successfully:', solanaWallet.publicKey.toString());
+} catch (error) {
+  console.error('❌ Failed to create Solana wallet from private key:', error.message);
+  console.error('   Make sure SOLANA_PRIVATE_KEY is a valid 64-element array');
+  process.exit(1);
+}
 
 // Bridge contract ABI
 const bridgeABI = [

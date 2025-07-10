@@ -5,7 +5,7 @@ async function testBridgeFromDeployment() {
   
   // Setup provider and deployment wallet
   const provider = new ethers.JsonRpcProvider('https://rpc.marscredit.xyz');
-  const deploymentWallet = new ethers.Wallet('0x702f0b3c12108a7341cc1c94ac83a4a4732df139fb75880d13568883244082ea', provider);
+  const deploymentWallet = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY || (() => { console.error('❌ DEPLOYER_PRIVATE_KEY required'); process.exit(1); })(), provider);
   
   const contractAddress = '0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba';
   const solanaTestAddress = 'Ct51j1hoP52sjJNmL2dGwqLAS2pcSe8nJPeWd6JkS73b';

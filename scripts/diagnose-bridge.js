@@ -5,7 +5,7 @@ async function diagnoseBridge() {
   
   // Setup provider
   const provider = new ethers.JsonRpcProvider('https://rpc.marscredit.xyz');
-  const wallet = new ethers.Wallet('0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318', provider);
+  const wallet = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY || (() => { console.error('❌ DEPLOYER_PRIVATE_KEY required'); process.exit(1); })(), provider);
   
   const contractAddress = '0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba';
   

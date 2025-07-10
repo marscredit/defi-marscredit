@@ -6,23 +6,34 @@ const { Connection, PublicKey, Keypair } = require('@solana/web3.js');
 console.log('🌉 Mars Bridge Relayer (Simple Version)');
 console.log('=====================================');
 
-// Configuration
+// Configuration from environment variables
 const config = {
   l1RpcUrl: 'https://rpc.marscredit.xyz',
-  l1PrivateKey: '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318',
-  bridgeContractAddress: '0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba',
-  solanaRpcUrl: 'https://api.mainnet-beta.solana.com',
-  solanaPrivateKey: [155,171,247,212,37,199,222,84,239,121,126,211,47,58,211,70,78,197,121,59,120,141,228,188,58,129,26,189,62,198,5,120,189,211,191,106,228,136,171,154,143,153,202,219,35,33,170,75,11,231,13,145,226,159,162,3,99,36,129,102,247,105,139,147],
-  marsMintAddress: 'uNcM3H28XL12sZL2LXnrUG5EnfTRQx9wb2ULh5hUF4b',
-  marsTokenAccount: '29zqmJEVmhXrqbDSW5TJYdGzPLvJQKLXzLwTWjqLf3J4'
+  l1PrivateKey: process.env.RELAYER_PRIVATE_KEY,
+  bridgeContractAddress: process.env.BRIDGE_CONTRACT_ADDRESS,
+  solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+  solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY ? JSON.parse(process.env.SOLANA_PRIVATE_KEY) : null,
+  marsMintAddress: process.env.MARS_MINT_ADDRESS
 };
 
-// Initialize L1 provider
-const l1Provider = new ethers.JsonRpcProvider(config.l1RpcUrl);
-const l1Wallet = new ethers.Wallet(config.l1PrivateKey, l1Provider);
+// Validate required environment variables
+const requiredEnvVars = [
+  'RELAYER_PRIVATE_KEY',
+  'BRIDGE_CONTRACT_ADDRESS',
+  'SOLANA_PRIVATE_KEY', 
+  'MARS_MINT_ADDRESS'
+];
 
-// Initialize Solana connection
-const solanaConnection = new Connection(config.solanaRpcUrl, 'confirmed');
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`❌ Missing required environment variable: ${envVar}`);
+    process.exit(1);
+  }
+}
+
+// Initialize connections
+const l1Wallet = new ethers.Wallet(config.l1PrivateKey, new ethers.JsonRpcProvider(config.l1RpcUrl));
+const solanaConnection = new Connection(config.solanaRpcUrl);
 const solanaWallet = Keypair.fromSecretKey(Uint8Array.from(config.solanaPrivateKey));
 
 // Bridge contract ABI
@@ -40,7 +51,7 @@ async function testConnections() {
   
   try {
     // Test L1 connection
-    const l1Block = await l1Provider.getBlockNumber();
+    const l1Block = await new ethers.JsonRpcProvider(config.l1RpcUrl).getBlockNumber();
     console.log('✅ L1 connection OK, block:', l1Block);
     
     // Test Solana connection

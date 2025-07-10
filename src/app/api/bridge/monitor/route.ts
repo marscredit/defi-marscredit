@@ -43,19 +43,27 @@ export async function GET() {
     // Check relayer wallet balance
     let relayerBalance = null;
     try {
-      const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
+      const SOLANA_PRIVATE_KEY = process.env.SOLANA_PRIVATE_KEY;
       const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
       
-      if (RELAYER_PRIVATE_KEY) {
+      if (SOLANA_PRIVATE_KEY) {
         const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
-        const relayerKeypair = Buffer.from(RELAYER_PRIVATE_KEY.split(',').map(num => parseInt(num)));
-        const relayerPubkey = new PublicKey(relayerKeypair.slice(32, 64));
         
-        const balance = await connection.getBalance(relayerPubkey);
+        // Parse Solana private key as JSON array
+        const parsedPrivateKey = JSON.parse(SOLANA_PRIVATE_KEY);
+        if (!Array.isArray(parsedPrivateKey) || parsedPrivateKey.length !== 64) {
+          throw new Error('SOLANA_PRIVATE_KEY must be a 64-element array');
+        }
+        
+        // Import Keypair for proper public key extraction
+        const { Keypair } = await import('@solana/web3.js');
+        const relayerKeypair = Keypair.fromSecretKey(Uint8Array.from(parsedPrivateKey));
+        
+        const balance = await connection.getBalance(relayerKeypair.publicKey);
         relayerBalance = {
           sol: balance / 1e9,
           lamports: balance,
-          address: relayerPubkey.toBase58(),
+          address: relayerKeypair.publicKey.toBase58(),
         };
       }
     } catch (error) {

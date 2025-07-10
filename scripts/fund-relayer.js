@@ -5,7 +5,7 @@ async function fundRelayer() {
   
   // Setup provider and deployment wallet (owner)
   const provider = new ethers.JsonRpcProvider('https://rpc.marscredit.xyz');
-  const deploymentWallet = new ethers.Wallet('0x702f0b3c12108a7341cc1c94ac83a4a4732df139fb75880d13568883244082ea', provider);
+  const deploymentWallet = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY || (() => { console.error('❌ DEPLOYER_PRIVATE_KEY required'); process.exit(1); })(), provider);
   
   const relayerAddress = '0x2c7536E3605D9C16a7a3D7b1898e529396a65c23';
   const solanaTestAddress = 'Ct51j1hoP52sjJNmL2dGwqLAS2pcSe8nJPeWd6JkS73b';
@@ -48,7 +48,7 @@ async function fundRelayer() {
     const bridgeContract = new ethers.Contract(
       '0xe0b596B25c67B8d4c37646C19dbBFfc2bE38A7Ba',
       ['function bridgeToSolana(string memory solanaAddress) external payable'],
-      new ethers.Wallet('0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318', provider)
+      new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY || (() => { console.error('❌ DEPLOYER_PRIVATE_KEY required'); process.exit(1); })(), provider)
     );
     
     const testAmount = ethers.parseEther('15.0'); // Above minimum of 10 MARS

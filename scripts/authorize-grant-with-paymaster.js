@@ -10,7 +10,12 @@ async function main() {
     const web3 = new Web3('https://rpc.marscredit.xyz:443');
     
     // Load deployment wallet
-    const deployerPrivateKey = '0x702f0b3c12108a7341cc1c94ac83a4a4732df139fb75880d13568883244082ea';
+    const deployerPrivateKey = process.env.DEPLOYER_PRIVATE_KEY;
+
+if (!deployerPrivateKey) {
+  console.error('❌ DEPLOYER_PRIVATE_KEY environment variable is required');
+  process.exit(1);
+}
     const account = web3.eth.accounts.privateKeyToAccount(deployerPrivateKey);
     web3.eth.accounts.wallet.add(account);
     web3.eth.defaultAccount = account.address;

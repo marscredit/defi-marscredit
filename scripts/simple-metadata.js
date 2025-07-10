@@ -19,7 +19,7 @@ const config = {
   solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY ? 
     JSON.parse(process.env.SOLANA_PRIVATE_KEY) : 
-    [155,171,247,212,37,199,222,84,239,121,126,211,47,58,211,70,78,197,121,59,120,141,228,188,58,129,26,189,62,198,5,120,189,211,191,106,228,136,171,154,143,153,202,219,35,33,170,75,11,231,13,145,226,159,162,3,99,36,129,102,247,105,139,147],
+    (() => { console.error('❌ SOLANA_PRIVATE_KEY environment variable is required'); process.exit(1); })(),
   marsMintAddress: process.env.MARS_MINT_ADDRESS || 'A9jPcpg7zUVtcNgs3GQS88BrLNiBnNxw1kwX3JRJrsw8'
 };
 
