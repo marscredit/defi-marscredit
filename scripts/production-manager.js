@@ -94,7 +94,7 @@ class ProductionManager {
     return new Promise((resolve) => {
       console.log('🌉 Starting bridge relayer...');
       
-      const relayer = fork(path.join(__dirname, 'simple-relayer.js'), {
+      const relayer = fork(path.join(__dirname, 'simple-relayer-fixed-v2.js'), {
         env: process.env,
         silent: false
       });

@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Web3Provider } from "@/components/Web3Provider";
 
+// Solana wallet adapter styles
+import '@solana/wallet-adapter-react-ui/styles.css';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

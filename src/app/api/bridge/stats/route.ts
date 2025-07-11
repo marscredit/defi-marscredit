@@ -29,7 +29,26 @@ export async function GET() {
   try {
     // Initialize connections
     const l1Provider = new ethers.JsonRpcProvider(BRIDGE_CONFIG.l1.rpcUrl)
-    const solanaConnection = new Connection(BRIDGE_CONFIG.solana.rpcUrl, 'confirmed')
+    
+    // Create Solana connection with Tatum API key if available
+    let solanaConnection
+    const solanaApiKey = process.env.SOLANA_RPC_API_KEY
+    if (solanaApiKey && BRIDGE_CONFIG.solana.rpcUrl.includes('tatum.io')) {
+      // For Tatum, use custom fetch with API key header
+      const customFetch = (url: string, options: any) => {
+        const headers = {
+          ...options.headers,
+          'x-api-key': solanaApiKey,
+        }
+        return fetch(url, { ...options, headers })
+      }
+      solanaConnection = new Connection(BRIDGE_CONFIG.solana.rpcUrl, { 
+        commitment: 'confirmed',
+        fetch: customFetch
+      })
+    } else {
+      solanaConnection = new Connection(BRIDGE_CONFIG.solana.rpcUrl, 'confirmed')
+    }
     
     // Get L1 bridge stats
     const bridgeContract = new ethers.Contract(

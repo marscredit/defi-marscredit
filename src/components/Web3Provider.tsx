@@ -20,7 +20,10 @@ const queryClient = new QueryClient()
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   // Solana network setup - MAINNET for production
   const network = WalletAdapterNetwork.Mainnet
-  const endpoint = useMemo(() => clusterApiUrl(network), [network])
+  const endpoint = useMemo(() => 
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl(network), 
+    [network]
+  )
   
   // Solana wallets setup
   const wallets = useMemo(

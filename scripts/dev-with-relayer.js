@@ -79,7 +79,7 @@ nextDev.stderr.on('data', (data) => {
 setTimeout(() => {
   console.log('🌉 Starting Bridge Relayer...');
   
-  const relayer = spawn('node', ['scripts/simple-relayer.js'], {
+  const relayer = spawn('node', ['scripts/simple-relayer-fixed.js'], {
     cwd: process.cwd(),
     env: process.env
   });

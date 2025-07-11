@@ -6,6 +6,8 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { parseEther, formatEther } from 'viem'
 import { Connection, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createBurnInstruction, getAccount } from '@solana/spl-token'
+import { BridgeWalletManager } from './BridgeWalletManager'
+import { marsCreditNetwork } from '@/lib/web3'
 
 interface BridgeDirection {
   from: 'L1' | 'Solana'
@@ -43,7 +45,8 @@ export function MarsBridge() {
   } | null>(null)
 
   // Wallet connections
-  const { address: l1Address, isConnected: l1Connected } = useAccount()
+  const { address: l1Address, isConnected: l1Connected, chainId } = useAccount()
+  const isCorrectNetwork = chainId === marsCreditNetwork.id
   
   // Solana wallet - handle case where provider might not be available
   const walletContext = useWallet()
@@ -67,6 +70,8 @@ export function MarsBridge() {
         console.log('✅ Bridge config loaded from environment variables');
         console.log('   Bridge Contract:', bridgeContract);
         console.log('   Solana Mint:', marsMint);
+        console.log('   Solana RPC URL:', process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
+        console.log('🔗 Using SolScan RPC for better reliability');
         
       } catch (error) {
         console.warn('Failed to load bridge config, using fallback:', error);
@@ -161,22 +166,7 @@ export function MarsBridge() {
     setError('')
   }
 
-  // Get required wallet connection status
-  const getWalletRequirement = () => {
-    if (direction.from === 'L1') {
-      return {
-        required: 'L1 wallet (MetaMask)',
-        connected: l1Connected,
-        optional: 'Solana wallet (for auto-fill address)'
-      }
-    } else {
-      return {
-        required: 'Solana wallet (Phantom)',
-        connected: solanaConnected,
-        optional: 'L1 wallet (for auto-fill address)'
-      }
-    }
-  }
+
 
   // Handle bridge transaction
   const handleBridge = async () => {
@@ -236,7 +226,29 @@ export function MarsBridge() {
           return
         }
 
-        const connection = new Connection(SOLANA_RPC_URL)
+        console.log('🌉 Solana Bridge Transaction - Using RPC:', SOLANA_RPC_URL)
+        console.log('📡 Connecting to Solana RPC for transaction submission...')
+        
+        // Create connection with API key if needed (for Tatum)
+        let connection
+        const solanaApiKey = process.env.NEXT_PUBLIC_SOLANA_RPC_API_KEY
+        if (solanaApiKey && SOLANA_RPC_URL.includes('tatum.io')) {
+          console.log('🔑 Using Tatum API key for Solana connection')
+          // For Tatum, use custom fetch with API key header
+          const customFetch = (url: string, options: any) => {
+            const headers = {
+              ...options.headers,
+              'x-api-key': solanaApiKey,
+            }
+            return fetch(url, { ...options, headers })
+          }
+          connection = new Connection(SOLANA_RPC_URL, { 
+            commitment: 'confirmed',
+            fetch: customFetch
+          })
+        } else {
+          connection = new Connection(SOLANA_RPC_URL)
+        }
         const fromPubkey = new PublicKey(solanaAddress!.toString())
         const mintPubkey = new PublicKey(MARS_MINT_ADDRESS)
         
@@ -291,7 +303,9 @@ export function MarsBridge() {
     }
   }, [contractError])
 
-  const walletReq = getWalletRequirement()
+  // Get the appropriate wallet connection status based on direction
+  const isRequiredWalletConnected = direction.from === 'L1' ? l1Connected : solanaConnected
+  const isNetworkCorrect = direction.from === 'L1' ? isCorrectNetwork : true // Solana doesn't need network check
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -343,24 +357,8 @@ export function MarsBridge() {
       <div className="mars-card p-8 rounded-xl">
         <h2 className="text-2xl font-bold mb-6 mars-glow-text">Bridge MARS</h2>
         
-        {/* Wallet Connection Status - Only show required wallet */}
-        <div className="mb-6 p-4 bg-black/30 rounded-xl border border-red-600/20">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-red-400">Required:</span>
-            <span className={walletReq.connected ? 'text-green-400' : 'text-red-400'}>
-              {walletReq.required} {walletReq.connected ? '✅' : '❌'}
-            </span>
-          </div>
-          {!walletReq.connected && (
-            <div className="text-red-400/80 text-sm">
-              Connect your {walletReq.required} to continue
-            </div>
-          )}
-          <div className="flex items-center justify-between text-sm text-red-400/60 mt-2">
-            <span>Optional:</span>
-            <span>{walletReq.optional}</span>
-          </div>
-        </div>
+        {/* Dynamic Wallet Manager - Shows only relevant wallet */}
+        <BridgeWalletManager direction={direction} />
 
         {/* Amount Input */}
         <div className="mb-6">
@@ -431,7 +429,7 @@ export function MarsBridge() {
         {/* Bridge Button */}
         <button
           onClick={handleBridge}
-          disabled={isProcessing || isPending || isConfirming || !amount || !recipientAddress || !walletReq.connected || !bridgeConfig}
+          disabled={isProcessing || isPending || isConfirming || !amount || !recipientAddress || !isRequiredWalletConnected || !isNetworkCorrect || !bridgeConfig}
           className="w-full mars-button py-4 text-white font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {!bridgeConfig ? 'Loading bridge configuration...' :
