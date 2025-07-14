@@ -26,6 +26,16 @@ console.log('   RELAYER_PRIVATE_KEY:', process.env.RELAYER_PRIVATE_KEY ? '✅ Se
 console.log('   BRIDGE_CONTRACT_ADDRESS:', process.env.BRIDGE_CONTRACT_ADDRESS || '❌ Missing');
 console.log('   SOLANA_PRIVATE_KEY:', process.env.SOLANA_PRIVATE_KEY ? '✅ Set' : '❌ Missing');
 console.log('   MARS_MINT_ADDRESS:', process.env.MARS_MINT_ADDRESS || '❌ Missing');
+console.log('   SOLANA_RPC_URL:', process.env.SOLANA_RPC_URL || '❌ Missing (will use default)');
+console.log('   SOLANA_RPC_API_KEY:', process.env.SOLANA_RPC_API_KEY ? '✅ Set' : '❌ Missing');
+console.log('');
+
+// Debug: Show resolved config
+console.log('📝 Resolved Configuration:');
+console.log('   L1 RPC URL:', config.l1RpcUrl);
+console.log('   Solana RPC URL:', config.solanaRpcUrl);
+console.log('   Bridge Contract:', config.bridgeContractAddress);
+console.log('   MARS Mint:', config.marsMintAddress);
 console.log('');
 
 // Validate required environment variables
@@ -44,6 +54,14 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+// Validate Solana RPC URL
+if (!config.solanaRpcUrl || (!config.solanaRpcUrl.startsWith('http://') && !config.solanaRpcUrl.startsWith('https://'))) {
+  console.error('❌ Invalid Solana RPC URL:', config.solanaRpcUrl);
+  console.error('💡 Please ensure SOLANA_RPC_URL is set to a valid HTTP/HTTPS URL');
+  console.error('💡 Falling back to default Solana mainnet RPC');
+  config.solanaRpcUrl = 'https://api.mainnet-beta.solana.com';
+}
+
 // Initialize connections
 const l1Wallet = new ethers.Wallet(config.l1PrivateKey, new ethers.JsonRpcProvider(config.l1RpcUrl));
 
@@ -52,6 +70,7 @@ let solanaConnection;
 const solanaApiKey = process.env.SOLANA_RPC_API_KEY;
 if (solanaApiKey && config.solanaRpcUrl.includes('tatum.io')) {
   console.log('🔑 Using Tatum API key for Solana connection');
+  console.log('🔗 Tatum RPC URL:', config.solanaRpcUrl);
   // For Tatum, use custom fetch with API key header
   const customFetch = (url, options) => {
     const headers = {
@@ -66,6 +85,7 @@ if (solanaApiKey && config.solanaRpcUrl.includes('tatum.io')) {
     fetch: customFetch
   });
 } else {
+  console.log('🔗 Using public Solana RPC:', config.solanaRpcUrl);
   solanaConnection = new Connection(config.solanaRpcUrl);
 }
 
