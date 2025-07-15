@@ -135,18 +135,83 @@ async function testConnections() {
 // Check if L1 transaction was already processed (on-chain verification)
 async function isL1TransactionProcessed(l1TxHash) {
   try {
-    // Get all TokensLocked events and check if this tx hash exists
+    // For V3 stateless operation, we need to check if the corresponding
+    // Solana minting has actually occurred for this L1 transaction
+    
+    // First, find the bridge ID for this L1 transaction
     const filter = bridgeContract.filters.TokensLocked();
     const events = await bridgeContract.queryFilter(filter);
     
-    // Check if this L1 transaction hash already triggered a bridge event
+    let bridgeId = null;
+    let recipient = null;
+    let amount = null;
+    
     for (const event of events) {
       if (event.transactionHash === l1TxHash) {
-        return true; // Already processed
+        bridgeId = event.args.bridgeId.toString();
+        recipient = event.args.solanaRecipient;
+        amount = ethers.formatEther(event.args.amount);
+        break;
       }
     }
     
-    return false; // Not processed yet
+    if (!bridgeId) {
+      return false; // L1 transaction not found
+    }
+    
+    // Check if we can find evidence that Solana minting occurred
+    // This is a best-effort check by looking at recent Solana mint activity
+    try {
+      const recipientPubkey = new PublicKey(recipient);
+      const mintPubkey = new PublicKey(config.marsMintAddress);
+      
+      // Get associated token account
+      const associatedTokenAccount = getAssociatedTokenAddressSync(
+        mintPubkey,
+        recipientPubkey
+      );
+      
+      // Get recent transactions for this token account
+      const signatures = await solanaConnection.getSignaturesForAddress(associatedTokenAccount, {
+        limit: 50
+      });
+      
+      // Look for mint transactions that match the expected amount
+      for (const sigInfo of signatures) {
+        try {
+          const tx = await solanaConnection.getParsedTransaction(sigInfo.signature, { 
+            maxSupportedTransactionVersion: 0 
+          });
+          
+          if (!tx) continue;
+          
+          // Look for mint instructions
+          const instructions = tx.transaction.message.instructions;
+          for (const ix of instructions) {
+            if (ix.parsed && ix.parsed.type === 'mintTo') {
+              const mintInfo = ix.parsed.info;
+              const mintAmount = parseFloat(mintInfo.amount) / 1e9; // Convert from smallest unit
+              
+              // Check if this mint matches our expected amount (within 0.001 MARS tolerance)
+              if (Math.abs(mintAmount - parseFloat(amount)) < 0.001) {
+                console.log(`   ✅ Found matching Solana mint: ${mintAmount} MARS in tx ${sigInfo.signature}`);
+                return true; // Found matching mint transaction
+              }
+            }
+          }
+        } catch (error) {
+          // Skip problematic transactions
+          continue;
+        }
+      }
+      
+      return false; // No matching mint found
+      
+    } catch (error) {
+      console.log(`   ⚠️  Could not verify Solana minting for Bridge ID ${bridgeId}: ${error.message}`);
+      return false; // Assume not processed if we can't verify
+    }
+    
   } catch (error) {
     console.error('❌ Error checking L1 transaction status:', error.message);
     return false;
