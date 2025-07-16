@@ -17,7 +17,13 @@ const config = {
   solanaRpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY ? 
     JSON.parse(process.env.SOLANA_PRIVATE_KEY) : null,
-  marsMintAddress: process.env.MARS_MINT_ADDRESS
+  marsMintAddress: process.env.MARS_MINT_ADDRESS,
+  // Production timing configuration
+  solanaMonitoringInterval: 5 * 60 * 1000, // 5 minutes (was 60 seconds)
+  confirmationCheckInterval: 60 * 1000, // 1 minute (was 30 seconds)
+  baseDelay: 2000, // 2 seconds base delay (was 500ms-1000ms)
+  maxRetries: 3,
+  backoffMultiplier: 2
 };
 
 // Debug: Show what environment variables are loaded (safely)
@@ -36,6 +42,9 @@ console.log('   L1 RPC URL:', config.l1RpcUrl);
 console.log('   Solana RPC URL:', config.solanaRpcUrl);
 console.log('   Bridge Contract:', config.bridgeContractAddress);
 console.log('   MARS Mint:', config.marsMintAddress);
+console.log('   Solana Monitor Interval:', config.solanaMonitoringInterval / 1000, 'seconds');
+console.log('   Confirmation Check Interval:', config.confirmationCheckInterval / 1000, 'seconds');
+console.log('   Base Delay:', config.baseDelay, 'ms');
 console.log('');
 
 // Validate required environment variables
@@ -102,6 +111,60 @@ const bridgeABI = [
 
 const bridgeContract = new ethers.Contract(config.bridgeContractAddress, bridgeABI, l1Wallet);
 
+// Enhanced delay function with exponential backoff
+async function delay(ms, attempt = 0) {
+  const backoffDelay = ms * Math.pow(config.backoffMultiplier, attempt);
+  const maxDelay = 30000; // Cap at 30 seconds
+  const actualDelay = Math.min(backoffDelay, maxDelay);
+  
+  if (attempt > 0) {
+    console.log(`   ⏳ Backoff delay: ${actualDelay}ms (attempt ${attempt + 1})`);
+  }
+  
+  return new Promise(resolve => setTimeout(resolve, actualDelay));
+}
+
+// Enhanced retry function with exponential backoff
+async function retryWithBackoff(fn, context = '', maxRetries = config.maxRetries) {
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Check if it's a rate limiting error
+      if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+        console.log(`   ⚠️  Rate limit hit for ${context} (attempt ${attempt + 1}/${maxRetries})`);
+        
+        if (attempt < maxRetries - 1) {
+          await delay(config.baseDelay, attempt);
+          continue;
+        }
+      }
+      
+      // Check if it's a WebSocket error - don't retry these as aggressively
+      if (error.message.includes('ws error') || error.message.includes('WebSocket')) {
+        console.log(`   ⚠️  WebSocket error for ${context}: ${error.message}`);
+        if (attempt < maxRetries - 1) {
+          await delay(config.baseDelay * 2, attempt); // Longer delay for WebSocket errors
+          continue;
+        }
+      }
+      
+      // For other errors, retry with normal backoff
+      if (attempt < maxRetries - 1) {
+        console.log(`   ⚠️  Error in ${context} (attempt ${attempt + 1}/${maxRetries}): ${error.message}`);
+        await delay(config.baseDelay, attempt);
+        continue;
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 // Test connections
 async function testConnections() {
   console.log('🔧 Testing connections...');
@@ -111,8 +174,11 @@ async function testConnections() {
     const l1Block = await new ethers.JsonRpcProvider(config.l1RpcUrl).getBlockNumber();
     console.log('✅ L1 connection OK, block:', l1Block);
     
-    // Test Solana connection
-    const slot = await solanaConnection.getSlot();
+    // Test Solana connection with retry
+    const slot = await retryWithBackoff(
+      () => solanaConnection.getSlot(),
+      'Solana connection test'
+    );
     console.log('✅ Solana connection OK, slot:', slot);
     
     // Test wallet addresses
@@ -171,17 +237,21 @@ async function isL1TransactionProcessed(l1TxHash) {
         recipientPubkey
       );
       
-      // Get recent transactions for this token account
-      const signatures = await solanaConnection.getSignaturesForAddress(associatedTokenAccount, {
-        limit: 50
-      });
+      // Get recent transactions for this token account with retry
+      const signatures = await retryWithBackoff(
+        () => solanaConnection.getSignaturesForAddress(associatedTokenAccount, { limit: 50 }),
+        `getting signatures for ${recipient.substring(0, 8)}...`
+      );
       
       // Look for mint transactions that match the expected amount
       for (const sigInfo of signatures) {
         try {
-          const tx = await solanaConnection.getParsedTransaction(sigInfo.signature, { 
-            maxSupportedTransactionVersion: 0 
-          });
+          const tx = await retryWithBackoff(
+            () => solanaConnection.getParsedTransaction(sigInfo.signature, { 
+              maxSupportedTransactionVersion: 0 
+            }),
+            `parsing transaction ${sigInfo.signature.substring(0, 8)}...`
+          );
           
           if (!tx) continue;
           
@@ -252,7 +322,11 @@ async function mintTokensOnSolana(recipient, amount, bridgeId, l1TxHash) {
     );
     
     // Check if token account exists and create if needed
-    const accountInfo = await solanaConnection.getAccountInfo(associatedTokenAccount);
+    const accountInfo = await retryWithBackoff(
+      () => solanaConnection.getAccountInfo(associatedTokenAccount),
+      `getting account info for ${recipient.substring(0, 8)}...`
+    );
+    
     if (!accountInfo) {
       console.log('📝 Creating associated token account...');
       // Create the token account first in a separate transaction
@@ -266,8 +340,16 @@ async function mintTokensOnSolana(recipient, amount, bridgeId, l1TxHash) {
         )
       );
       
-      const createAccountSignature = await solanaConnection.sendTransaction(createAccountTx, [solanaWallet]);
-      await solanaConnection.confirmTransaction(createAccountSignature, 'confirmed');
+      const createAccountSignature = await retryWithBackoff(
+        () => solanaConnection.sendTransaction(createAccountTx, [solanaWallet]),
+        `creating token account for ${recipient.substring(0, 8)}...`
+      );
+      
+      await retryWithBackoff(
+        () => solanaConnection.confirmTransaction(createAccountSignature, 'confirmed'),
+        `confirming token account creation ${createAccountSignature.substring(0, 8)}...`
+      );
+      
       console.log('✅ Token account created:', createAccountSignature);
     }
     
@@ -285,9 +367,16 @@ async function mintTokensOnSolana(recipient, amount, bridgeId, l1TxHash) {
       )
     );
     
-    // Send transaction
-    const signature = await solanaConnection.sendTransaction(mintTx, [solanaWallet]);
-    await solanaConnection.confirmTransaction(signature, 'confirmed');
+    // Send transaction with retry
+    const signature = await retryWithBackoff(
+      () => solanaConnection.sendTransaction(mintTx, [solanaWallet]),
+      `minting ${amount} MARS to ${recipient.substring(0, 8)}...`
+    );
+    
+    await retryWithBackoff(
+      () => solanaConnection.confirmTransaction(signature, 'confirmed'),
+      `confirming mint transaction ${signature.substring(0, 8)}...`
+    );
     
     console.log(`✅ Minted ${amount} MARS to ${recipient}`);
     console.log(`   Solana Transaction: ${signature}`);
@@ -374,8 +463,12 @@ async function processHistoricalTransactions() {
           console.log(`⚠️  Bridge ID ${bridgeId} was already processed`);
         }
         
+        // Add delay between processing to avoid rate limits
+        await delay(config.baseDelay);
+        
       } catch (error) {
         console.error(`❌ Failed to process Bridge ID ${bridgeId}:`, error.message);
+        // Continue processing other transactions
       }
     }
     
@@ -460,12 +553,12 @@ async function pollForConfirmations(event, user, amount, solanaRecipient, bridge
             console.log(`📍 Got transaction block: ${transactionBlock}`);
           } else {
             console.log(`⏳ Bridge ID ${bridgeId.toString()}: Transaction not yet mined, retrying...`);
-            setTimeout(() => checkConfirmations(), 30000);
+            setTimeout(() => checkConfirmations(), config.confirmationCheckInterval);
             return;
           }
         } catch (error) {
           console.log(`⏳ Bridge ID ${bridgeId.toString()}: Could not get receipt yet, retrying...`);
-          setTimeout(() => checkConfirmations(), 30000);
+          setTimeout(() => checkConfirmations(), config.confirmationCheckInterval);
           return;
         }
       }
@@ -497,8 +590,8 @@ async function pollForConfirmations(event, user, amount, solanaRecipient, bridge
             
           } catch (error) {
             console.error(`❌ Failed to mint for Bridge ID ${bridgeId.toString()}:`, error.message);
-            // Retry in 30 seconds
-            setTimeout(() => checkConfirmations(), 30000);
+            // Retry in 1 minute instead of 30 seconds
+            setTimeout(() => checkConfirmations(), config.confirmationCheckInterval);
           }
         } else {
           console.log(`⏭️ Bridge ID ${bridgeId.toString()} already processed`);
@@ -513,13 +606,13 @@ async function pollForConfirmations(event, user, amount, solanaRecipient, bridge
         return;
       }
       
-      // Wait 30 seconds and check again
-      setTimeout(() => checkConfirmations(), 30000);
+      // Wait and check again (increased from 30 seconds to 1 minute)
+      setTimeout(() => checkConfirmations(), config.confirmationCheckInterval);
       
     } catch (error) {
       console.error(`❌ Error checking confirmations for Bridge ID ${bridgeId.toString()}:`, error.message);
-      // Retry in 30 seconds
-      setTimeout(() => checkConfirmations(), 30000);
+      // Retry in 1 minute
+      setTimeout(() => checkConfirmations(), config.confirmationCheckInterval);
     }
   };
   
@@ -547,7 +640,7 @@ async function unlockTokensOnL1(recipient, amount, solanaTxId) {
     const tx = await bridgeContract.unlockTokens(recipient, l1Amount, solanaTxIdBytes);
     
     console.log(`   ⏳ Waiting for confirmation...`);
-    const receipt = await tx.wait();
+    await tx.wait();
     
     return tx.hash;
     
@@ -562,26 +655,33 @@ async function monitorSolanaEvents() {
   console.log('🔄 Starting Solana → L1 monitoring...');
   console.log('   Monitoring for MARS burn transactions on Solana');
   console.log('   Will submit unlock transactions to L1 when detected');
+  console.log(`   Checking every ${config.solanaMonitoringInterval / 1000} seconds`);
   
-  // Basic monitoring loop - polls for transactions
+  // Basic monitoring loop - polls for transactions (increased interval)
   setInterval(async () => {
     try {
       console.log('🔍 Scanning for Solana burn transactions...');
       
       // Get recent transactions for the MARS mint account
       const mintPubkey = new PublicKey(config.marsMintAddress);
-      const signatures = await solanaConnection.getSignaturesForAddress(mintPubkey, {
-        limit: 10
-      });
+      const signatures = await retryWithBackoff(
+        () => solanaConnection.getSignaturesForAddress(mintPubkey, { limit: 10 }),
+        'getting MARS mint signatures'
+      );
       
       console.log(`   Found ${signatures.length} recent transactions on MARS mint`);
       
       // Parse transactions to find burn events
       for (const sigInfo of signatures) {
         try {
-          const tx = await solanaConnection.getParsedTransaction(sigInfo.signature, { 
-            maxSupportedTransactionVersion: 0 
-          });
+          await delay(config.baseDelay); // Increased delay between checks
+          
+          const tx = await retryWithBackoff(
+            () => solanaConnection.getParsedTransaction(sigInfo.signature, { 
+              maxSupportedTransactionVersion: 0 
+            }),
+            `parsing transaction ${sigInfo.signature.substring(0, 8)}...`
+          );
           
           if (!tx) continue;
           
@@ -644,18 +744,21 @@ async function monitorSolanaEvents() {
     } catch (error) {
       console.error('❌ Error scanning Solana transactions:', error.message);
     }
-  }, 60000); // Check every minute
+  }, config.solanaMonitoringInterval); // Increased from 60 seconds to 5 minutes
 }
 
 // Main function
 async function main() {
-  console.log('🚀 Starting Mars Bridge Relayer V3 (Stateless)');
-  console.log('====================================================');
+  console.log('🚀 Starting Mars Bridge Relayer V3 (Production-Ready)');
+  console.log('=====================================================');
   console.log('✅ L1 → Solana processing ENABLED');
   console.log('✅ Solana → L1 processing ENABLED');
   console.log('✅ On-chain state verification ONLY');
   console.log('✅ No JSON file dependencies');
   console.log('✅ Restart-safe operation');
+  console.log('✅ Production timing configuration');
+  console.log('✅ Exponential backoff for rate limits');
+  console.log('✅ Enhanced error handling');
   console.log('✅ Tatum RPC integration: ENABLED');
   console.log('');
   
@@ -682,7 +785,10 @@ async function main() {
     await monitorSolanaEvents();
     
     console.log('✅ All monitoring processes started successfully');
-    console.log('🔄 Relayer is now running...');
+    console.log('🔄 Relayer is now running with production timing...');
+    console.log(`   📊 Solana monitoring: every ${config.solanaMonitoringInterval / 1000} seconds`);
+    console.log(`   📊 Confirmation checks: every ${config.confirmationCheckInterval / 1000} seconds`);
+    console.log(`   📊 Base delay: ${config.baseDelay}ms with exponential backoff`);
     
   } catch (error) {
     console.error('❌ Error starting relayer:', error.message);
