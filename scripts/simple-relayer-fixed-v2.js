@@ -74,6 +74,18 @@ if (solanaApiKey && config.solanaRpcUrl.includes('tatum.io')) {
     commitment: 'confirmed',
     fetch: customFetch
   });
+} else if (solanaApiKey && config.solanaRpcUrl.includes('helius-rpc.com')) {
+  const customFetch = (url, options) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
+    };
+    return fetch(url, { ...options, headers });
+  };
+  solanaConnection = new Connection(config.solanaRpcUrl, {
+    commitment: 'confirmed',
+    fetch: customFetch
+  });
 } else {
   solanaConnection = new Connection(config.solanaRpcUrl);
 }
