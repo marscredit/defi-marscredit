@@ -74,9 +74,10 @@ if (!config.solanaRpcUrl || (!config.solanaRpcUrl.startsWith('http://') && !conf
 // Initialize connections
 const l1Wallet = new ethers.Wallet(config.l1PrivateKey, new ethers.JsonRpcProvider(config.l1RpcUrl));
 
-// Create Solana connection with Tatum API key if available
+// Create Solana connection with proper API key handling
 let solanaConnection;
 const solanaApiKey = process.env.SOLANA_RPC_API_KEY;
+
 if (solanaApiKey && config.solanaRpcUrl.includes('tatum.io')) {
   console.log('🔑 Using Tatum API key for Solana connection');
   console.log('🔗 Tatum RPC URL:', config.solanaRpcUrl);
@@ -93,9 +94,25 @@ if (solanaApiKey && config.solanaRpcUrl.includes('tatum.io')) {
     commitment: 'confirmed',
     fetch: customFetch
   });
+} else if (solanaApiKey && config.solanaRpcUrl.includes('helius-rpc.com')) {
+  console.log('🔑 Using Helius API key for Solana connection');
+  // For Helius, API key is already in the URL
+  console.log('🔗 Helius RPC URL:', config.solanaRpcUrl);
+  solanaConnection = new Connection(config.solanaRpcUrl, {
+    commitment: 'confirmed'
+  });
+} else if (solanaApiKey && (config.solanaRpcUrl.includes('alchemy.com') || config.solanaRpcUrl.includes('quicknode.com'))) {
+  console.log('🔑 Using API key for Solana connection (Alchemy/QuickNode)');
+  // For Alchemy/QuickNode, API key is typically in the URL
+  console.log('🔗 RPC URL:', config.solanaRpcUrl);
+  solanaConnection = new Connection(config.solanaRpcUrl, {
+    commitment: 'confirmed'
+  });
 } else {
   console.log('🔗 Using public Solana RPC:', config.solanaRpcUrl);
-  solanaConnection = new Connection(config.solanaRpcUrl);
+  solanaConnection = new Connection(config.solanaRpcUrl, {
+    commitment: 'confirmed'
+  });
 }
 
 const solanaWallet = Keypair.fromSecretKey(Uint8Array.from(config.solanaPrivateKey));
